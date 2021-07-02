@@ -27,7 +27,7 @@ enableRobotsTXT = true
 
   author = "Ng Yen Ngee"
   # description = ""
-  avatar = "/img/avatar.jpeg"
+  avatar = "/img/avatar.jpg"
   headerTitle = "Data Visualization"
   motto = "Analyse data to make better decisions"
   # maxTags = 5

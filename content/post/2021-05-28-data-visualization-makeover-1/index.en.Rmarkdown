@@ -3,9 +3,15 @@ title: "Data Visualization Makeover 1"
 author: "Ng Yen Ngee"
 date: '2021-05-28'
 slug: []
+cover: "/img/import_export_map.jpg"
 categories: []
 tags: ["Tableau", "DataVizMakeover", "MITB"]
+output:
+  blogdown::html_page: 
+    toc: true
 ---
+
+As part of Visual Analytics Course taken for SMU-MITB course. We are assigned a data visualization to critique and propose an alternative design. This is the first data viz makeover. The assignment can be found [here](https://isss608.netlify.app/dataviz/dataviz1) 
 
 
 ```{r setup, include=FALSE}
