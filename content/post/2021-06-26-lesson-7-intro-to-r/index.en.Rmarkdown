@@ -1,0 +1,181 @@
+---
+title: 'Lesson 7: Intro to R'
+author: 'Ng Yen Ngee'
+date: '2021-06-26'
+slug: []
+cover: "/img/tidyverse.jpg"
+categories: []
+tags: ["R", "tidyverse","ggiraph", "MITB"]
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+
+# Introduction to in-class exercise 7
+As part of my lesson in SMU Visual Analytics, prof teaches data visualization in R using Rmarkdown. The post below acts as both an in-class exercise for the lesson, as well as my notes. 
+
+Note to prof, if he is here: I have reorganized the in class exercise in a way that makes sense to me, but may not follow the step by step process prof went through in class. I have added additional items which I have kept as haphazard notes on my desktop.  Hope this is alright! 
+
+# Load packages
+Below is shortcut of how to load the packages in one shot. We can choose to add in whatever packages we want to load in the variable `packages`. This is an alternative code as oppose to loading the package line by line. 
+
+```{r load_packages}
+packages <- c('DT', 'ggiraph', 'plotly', 'tidyverse' )
+
+for(p in packages){
+  if(!require(p,character.only=T)) {
+    install.packages(p)
+  }
+  library(p, character.only=T)
+}
+```
+
+# Load data
+We use `read_csv` function which is part of the package in tidyverse to read the csv file. If it is an excel file, we can use read_excel etc. 
+
+```{r load_data}
+exam_data <- read_csv("data/Exam_data.csv")
+summary(exam_data)
+```
+
+The data are year end examination grades of cohort of Primary 3 students. Each student is represented by ID. Each student has a property of `CLASS`, `GENDER`, `RACE`, with their respective scores in English, Math and science.
+
+# Simple visualizations using ggplot2
+ggplot 2 provides a very systematic way of creating visualizations.
+
+```{r grammar_of_graphics, echo=FALSE}
+knitr::include_graphics("img/grammar_of_graphics.png")
+```
+
+To go through each layer, we use a simple example of building a Histogram that shows the distribution of `MATH` score. 
+
+## Data 
+```{r ggplot_data}
+# we can use this format 
+ggplot(data = exam_data)
+
+# or this format 
+exam_data %>%
+  ggplot()
+```
+
+Both will give a blank canvas. The second format gives a certain flexibility to manipulate the data using `dplyr` for the graph on the fly. E.g. using filter function, or creating a temporary column just for this graph, keeping the original table intact. Professor uses the first version, however, it is my preference to use the second format throughout the rest of the code. 
+
+## Aesthetics 
+Aesthetics is how we want to map the attributes of data to the visual characteristics e.g. axis, colours, size, shape, transparency. 
+
+As we want to create a histogram with `MATH` score, we will add `MATH` to x. 
+
+```{r ggplot_aes}
+exam_data %>%
+  ggplot(aes(x=MATHS))
+```
+
+We can see `MATH` score on the x-axis. 
+
+## Geometrics 
+Next we add what sort of plot we want. 
+
+```{r ggplot_geom}
+# for a normal bar plot 
+exam_data %>%
+  ggplot(aes(x=MATHS)) +
+  geom_bar()
+
+# e.g. we want to split by fill 
+exam_data %>%
+  ggplot(aes(x=MATHS, fill=GENDER)) +
+  geom_histogram()
+```
+
+Here are the following common options available and simple customization (that I know of and would likely commonly use (something like a cheat sheet for myself)): 
+
+### Common Geometric Types 
+
+#### geom_point()
+* scatter plot (need both x and y)
+
+#### geom_line()
+* line plot (need both x and y)
+
+#### geom_col()
+* horizontal bar plot (need y)
+
+#### geom_bar()
+* vertical bar plot (need x)
+
+#### geom_histogram()
+* histogram (need x) 
+Note that the fill in this case fills the bars in the histogram and not in the aesthetic which will split the colours by the different category. this would just make the histogram light blue.
+
+```{r ggplot_geom_histogram}
+exam_data %>%
+  ggplot(aes(x=MATHS)) +
+  geom_histogram(bins = 20, 
+                 color = "black", 
+                 fill = "light blue")
+
+exam_data %>%
+  ggplot(aes(x=MATHS, fill=GENDER)) +
+  geom_histogram(bins = 20, 
+                 color = "grey30")
+```
+
+
+#### geom_dotplot()
+* dot plot (need x)
+
+```{r ggplot_geom_dotplot}
+exam_data %>%
+  ggplot(aes(x=MATHS, fill=RACE)) +
+  geom_dotplot(binwidth = 2.5, dotsize = 0.5)
+```
+
+### combine geometrics
+sequence to sometimes important. e.g. for below, the boxplot is below the scatter point. 
+```{r ggplot_geom_combine}
+exam_data %>%
+  ggplot(aes(x=GENDER, y=MATHS)) +
+  geom_boxplot() + 
+  geom_point(position='jitter', size=0.5)
+```
+
+
+# Interactivity with R: ggiraph
+
+* tooltip: when hover, some information will appear 
+* Onclick: when click, it will jump to the link 
+* Data_id: when hover, the points with the same info will be highlighted 
+* It is shiny ready 
+
+Difference between ggplot2 and ggiraph: 
+
+```{r diff_ggplot_ggirph, echo=FALSE}
+knitr::include_graphics("img/diff_ggplot2_ggiraph.JPG")
+```
+
+```{r ggiraph}
+p <- exam_data %>%
+  ggplot(aes(x=MATHS)) +
+  geom_dotplot_interactive(aes(tooltip = CLASS, data_id = CLASS), 
+                           stackgroups=TRUE, 
+                           binwidth=1,
+                           method='histodot') + 
+  scale_y_continuous(NULL, breaks=NULL)
+
+girafe(
+  ggobj=p,
+  width_svg=6,
+  height_svg = 6*0.618
+)
+                           
+```
