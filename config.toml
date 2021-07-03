@@ -12,9 +12,12 @@ theme = "hugo-theme-dream"
 
 enableRobotsTXT = true
 
+[markup.goldmark.renderer]
+unsafe= true
+
 [params]
   background = "#f7f7f7"
-  backgroundImage = "/me/background.jpg"
+  backgroundImage = "/img/background_leaf.jpg"
   linkColor = "seagreen"
 
   # dark mode
