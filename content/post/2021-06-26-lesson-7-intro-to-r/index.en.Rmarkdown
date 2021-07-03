@@ -43,7 +43,7 @@ We use `read_csv` function which is part of the package in tidyverse to read the
 
 ```{r load_data}
 exam_data <- read_csv("data/Exam_data.csv")
-summary(exam_data)
+glimpse(exam_data)
 ```
 
 The data are year end examination grades of cohort of Primary 3 students. Each student is represented by ID. Each student has a property of `CLASS`, `GENDER`, `RACE`, with their respective scores in English, Math and science.
@@ -183,7 +183,7 @@ girafe(
 
 Plotly has more interactivity options than ggiraph with less 'coding'. The top right hand corner shows a panel of possible interactivity functions that can help us with our analysis.  
 
-#### basic layout 
+### basic layout 
 
 ``` {r plotly_basic}
 exam_data %>% 
@@ -191,7 +191,7 @@ exam_data %>%
           y = ~ENGLISH)
 ```
 
-#### adding colour 
+### adding colour 
 
 The interactivity in plotly is different from Tableau. When we click on the categorical features in the legend. it 'deselects' rather than selects. 
 
@@ -220,7 +220,7 @@ exam_data %>%
           color = ~RACE,
           colors = pal)
 ```
-#### customizing tool type
+### customizing tool type
 
 ``` {r plotly_tooltip}
 exam_data %>% 
@@ -233,7 +233,7 @@ exam_data %>%
 
 ```
 
-#### adding layout 
+### adding layout 
 
 This is where we can add in/do the following: 
 
@@ -255,7 +255,7 @@ exam_data %>%
 
 ```
 
-#### using ggplotly (keeping gg plot and wrapping with plotly)
+### using ggplotly (keeping gg plot and wrapping with plotly)
 
 You first save ggplot as an object, then use `ggplotly` to 'wrap' it. 
 Note: Sometime ggplot2 may not be 100% compatible with ggplotly. Need to be careful.
@@ -269,8 +269,8 @@ p <-ggplot(data =  exam_data, aes(x = MATHS, y = ENGLISH )) +
 ggplotly(p)
 ```
 
-#### Using Subplots
-We can use suplots to show two plots within one plot. 
+### Using Subplots
+We can use subplots to show two plots within one plot. 
 
 ``` {r ggplotly_subplot}
 d <- highlight_key(exam_data)
@@ -290,26 +290,9 @@ subplot(ggplotly(p1), ggplotly(p2))
 
 ## loading data tables with DT 
 
+Unfortunately, DT is not compatible with .rmarkdown files with hugo theme. So I would have to figure out an alternative. This will be done in a separate blog post. meanwhile, the straightforward code that words in distill is: 
+
 ``` {r dt}
-DT::datatable(exam_data)
+# DT::datatable(exam_data)
 ```
 
-
-## linking DT with Plotly: using crosstalk 
-
-``` {r crosstalk}
-d <- highlight_key(exam_data)
-
-p <-ggplot(data =  d, aes(x = MATHS, y = ENGLISH )) + 
-  geom_point (dotsize = 1) + 
-  coord_cartesian(xlim=c(0,100), 
-                  ylim=c(0,100))
-
-gg <- highlight(ggplotly(p), "plotly_selected")
-
-crosstalk::bscols(gg, DT::datatable(d), width=5)
-
-```
-
-
-    
