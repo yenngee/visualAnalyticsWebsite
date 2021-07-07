@@ -1,0 +1,302 @@
+---
+title: "Basics of Text Analytics"
+author: Ng Yen Ngee
+date: '2021-06-23'
+lastmod: '2021-07-03'
+slug: []
+cover: "/img/text_analytics.jpg"
+categories: []
+tags: ['Kronos Kidnapping', 'assignment', 'MITB', 'Text Analytics']
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, 
+                      message=FALSE)
+```
+
+```{r global vars, include=FALSE}
+new_article_conn <- "data/news_article_all.csv"
+```
+
+
+# Why am I doing this? 
+I am a student studying Masters of IT in Business 
+Unfortunately I am not a pro in text analytics and have to learn everything from scratch. Fortunately, our lovely prof gave us access to Datacamp.com which is a pretty cool way to learn this. 
+
+So the objective of this post is to apply everything that I have to learn, documenting each step, explaining the reasons behind each step onto the dataset that I actually need to analyse for my assignment, so that I can kill two birds with one stone. :)  
+
+Thus the following disclaimer: 
+The following methods used are learn from datacamp.com and obviously I don't own it. 
+
+Let's start! 
+
+## Preperation 
+
+### Loading packages
+
+Our very first step of course is to load the packages that would be useful for us. 
+
+```{r load package, echo=TRUE, results='hide'}
+library(tidyverse)
+library(tidytext)
+library(textdata)
+```
+
+* tidyverse: there are many reasons why this is such an awesome package which you can easily find online. Meanwhile, trust that we need to use this for text analytics 
+
+
+### Import data 
+
+This set of data is obtained by scrapping through 845 text files. I will run through how I did it here (which will be updated in the future hahaha).
+
+```{r import data}
+articles_data <- read_csv(new_article_conn)
+articles_data$published_date <- as.Date(articles_data$published_date, "%d/%m/%Y")
+articles_data <- articles_data %>% 
+  dplyr::select(source, published_date, location, title, author, text)
+
+glimpse(articles_data)
+```
+
+ We made it into a structure with the following features: 
+
+* source: newspaper brand 
+* index: text file number 
+* published_date: published date of the article 
+* location: some of the articles stated a location, though there are mostly null values in this column 
+* title: title of the article 
+* text: text of the article itself of varying length 
+* author: author of the article. Not all articles have this information 
+
+As with all data analysis, it would be prudent to run some exploratory data analysis, to understand the data and know which columns would be useful and which would not be. 
+
+### Simple exploration of data
+Let's take a look at each columns breakdown using `count` function: 
+
+
+```{r value_counts}
+articles_data %>% count(source, sort=TRUE)
+articles_data %>% count(location, sort=TRUE)
+articles_data %>% count(author, sort=TRUE)
+
+summary(articles_data$published_date)
+```
+
+However, we are unable to see the columns breakdown for "title" or "text" column since each row is unique. This is because it is considered as unstructured data. Part of the text analytics is to turn unstructured data to a structured one. 
+
+## Basics of Text analytics 
+### Tokenizing and cleaning
+Concept of Tokenizing, creating a bag of words: 
+* in a text, each unique word is a term 
+* each occurrence of a term is a token 
+* want to count the number of occurrences of a term --> hence creating bag of words 
+
+```{r token}
+#### Step 1: tokenize the column 
+text_tokens <- articles_data %>% 
+  unnest_tokens(word, text) 
+# the first input must be word to tokenize word. second input is the column name we want to tokenize.
+
+#### Step 2: let's count it 
+text_tokens %>%
+  count(word) %>%
+  arrange(desc(n))
+```
+
+However, we can see a lot of common words like 'the', 'of', 'and' which does not give us any important information. These are called stop words. Fortunately, our lovely package actually has a variable called `stop_words` which is a tibble that contains all these words. Now let's remove these stop words from our own tibble. 
+
+```{r token no stopwords}
+#### Step 1: tokenize + remove stop words using anti-join
+text_tokens <- articles_data %>% 
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words)
+# the first input must be word to tokenize word. second input is the column name we want to tokenize.
+
+#### Step 2: let's count it again
+text_word_count <- text_tokens %>%
+  count(word) %>%
+  arrange(desc(n))
+
+#### step 3: let's visualize it! 
+text_word_count %>%
+  filter(n>300) %>%
+  mutate(word = fct_reorder(word,n)) %>%
+  ggplot(aes(x = word, y=n)) +
+  geom_col() + 
+  coord_flip() + 
+  ggtitle("Article Text Word Count")
+```
+
+Which tells us a lot more information. 
+
+```{r token custom stopwords}
+#### Step 0: create new stop words
+custom_stop_words <- tribble(
+  ~word, ~lexicon,
+  "kronos", "CUSTOM",
+  "abila",  "CUSTOM"
+)
+stop_words2 <- stop_words %>%
+  bind_rows(custom_stop_words)
+
+#### Step 1: tokenize + remove stop words using anti-join
+text_tokens <- articles_data %>% 
+  unnest_tokens(word, text) %>%
+  anti_join(stop_words2)
+# the first input must be word to tokenize word. second input is the column name we want to tokenize.
+
+#### Step 2: let's count it again
+text_word_count <- text_tokens %>%
+  count(word) %>%
+  arrange(desc(n))
+
+#### step 3: let's visualize it! 
+text_word_count %>%
+  filter(n>300) %>%
+  mutate(word = fct_reorder(word,n)) %>%
+  ggplot(aes(x = word, y=n)) +
+  geom_col() + 
+  coord_flip() + 
+  ggtitle("Article Text Word Count")
+
+text_tokens %>%
+  count(word, source) %>%
+  group_by(source) %>%
+  top_n(10,n) %>%
+  ungroup() %>%
+  mutate(word = fct_reorder(word,n)) %>%
+  ggplot(aes(x = word, y=n, fill=source)) +
+  geom_col(show.legend = FALSE) + 
+  facet_wrap( ~ source, scales = "free_y") +
+  coord_flip() + 
+  ggtitle("Article Text Word Count by each Source")
+
+```
+
+We can also visualize this using `wordcloud()`
+
+```{r wordcloud}
+library(wordcloud)
+
+word_counts <- text_tokens %>%
+  count(word)
+
+wordcloud(words = word_counts$word, 
+          freq = word_counts$n, 
+          max.words = 30)
+
+```
+
+### Sentiment Analysis
+
+Sentiment Analysis is done by defining a particular sentiment to words. Thankfully, we have are in-built dictionaries in `tidytext` package. 
+
+#### Sentiment dictionary 
+
+There are 4 dictionaries with different definitions of sentiments. 
+
+```{r sentiment_dictionary}
+## bing dictionary
+# assigns words into positive and negative categories
+get_sentiments("bing")
+get_sentiments("bing") %>% count(sentiment)
+
+## Afinn dictionary 
+# assigns words with a score that runs between -5 and 5, with negative scores indicating negative sentiment and positive scores indicating positive sentiment
+get_sentiments("afinn")
+get_sentiments("afinn") %>% summarize(min=min(value), max=max(value))
+
+## NRC dictionary 
+# assigns words into one or more of the following ten categories: positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust
+get_sentiments("nrc")
+get_sentiments("nrc") %>% count(sentiment)
+
+#Loughran dictionary
+get_sentiments("loughran")
+get_sentiments("loughran") %>% count(sentiment)
+
+```
+
+#### Appending Sentiments 
+We need to join the sentiments dictionary to our `text_tokens` dataframe. If we count or find the distribution of the sentiment/value, we would be able to understand what is the general sentiment of each category, in this case, each article. 
+
+```{r join_sentiment}
+sentiment_review <- text_tokens %>% 
+  inner_join(get_sentiments("bing"))
+
+sentiment_review %>% 
+  count(sentiment) 
+
+
+sentiment_review <- text_tokens %>% 
+  inner_join(get_sentiments("afinn"))
+
+sentiment_review %>% 
+  count(value)
+
+sentiment_review <- text_tokens %>% 
+  inner_join(get_sentiments("nrc"))
+
+sentiment_review %>% 
+  count(sentiment)
+
+sentiment_review <- text_tokens %>% 
+  inner_join(get_sentiments("loughran"))
+
+sentiment_review %>% 
+  count(sentiment)
+
+```
+
+code to visualize using graph:
+
+```{r visualize_sentiment}
+word_counts <- sentiment_review %>%
+  filter(sentiment %in% c("positive", "negative")) %>% 
+  count(word, sentiment) %>%
+  group_by(sentiment) %>%
+  top_n(10, n) %>%
+  ungroup() %>%
+  mutate(word = fct_reorder(word, n))
+
+ggplot(word_counts, aes(x = word, y = n, fill = sentiment)) +
+geom_col(show.legend = FALSE) +
+facet_wrap(~ sentiment, scales = "free") +
+coord_flip() +
+labs(
+title = "Sentiment Word Counts",
+x = "Words"
+)
+```
+
+#### comparing sentiments across groups in data 
+
+```{r sentiment_by_group}
+sentiment_by_grp <- sentiment_review %>%
+  filter(sentiment %in% c("positive", "negative")) %>%
+  count(source, sentiment) %>%
+  spread(sentiment,n) %>% 
+  mutate(overall_sentiment = positive-negative, 
+         source = fct_reorder(source, overall_sentiment))
+sentiment_by_grp
+```
+
+```{r sentiment_by_group_viz}
+sentiment_by_grp %>% 
+  ggplot(aes(x = source, y = overall_sentiment, fill = as.factor(source))) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Overall Sentiment by Article",
+    subtitle = "Words in articles",
+    x = "Article",
+    y = "Overall Sentiment"
+    )
+
+```
+
+  
