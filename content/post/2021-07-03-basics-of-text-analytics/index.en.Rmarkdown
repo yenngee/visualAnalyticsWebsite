@@ -2,7 +2,7 @@
 title: "Basics of Text Analytics"
 author: Ng Yen Ngee
 date: '2021-06-23'
-lastmod: '2021-07-03'
+lastmod: '2021-07-10'
 slug: []
 cover: "/img/text_analytics.jpg"
 categories: []
@@ -44,6 +44,7 @@ Our very first step of course is to load the packages that would be useful for u
 library(tidyverse)
 library(tidytext)
 library(textdata)
+library(topicmodels)
 ```
 
 * tidyverse: there are many reasons why this is such an awesome package which you can easily find online. Meanwhile, trust that we need to use this for text analytics 
@@ -56,8 +57,9 @@ This set of data is obtained by scrapping through 845 text files. I will run thr
 ```{r import data}
 articles_data <- read_csv(new_article_conn)
 articles_data$published_date <- as.Date(articles_data$published_date, "%d/%m/%Y")
-articles_data <- articles_data %>% 
-  dplyr::select(source, published_date, location, title, author, text)
+articles_data <- articles_data %>%
+  mutate(article_id = paste(source,index, sep= "_")) %>%
+  dplyr::select(article_id, source, published_date, location, title, author, text)
 
 glimpse(articles_data)
 ```
@@ -300,3 +302,115 @@ sentiment_by_grp %>%
 ```
 
   
+### Topic Modeling 
+
+#### setting up topic modeling df
+
+Clustering	| Topic Modeling
+----------------------- | ------------------------
+Clusters are uncovered based on distance, which is continuous | Topics are uncovered based on word frequency, which is discrete.
+Every object is assigned to a single cluster. | Every document is a mixture (i.e., partial member) of every topic.
+
+We start off with the bag of words, which has rows of words from all our document. We use `cast_dtm` which essentially creates a sparse matrix (a matrix with lots of 0s) with each row representing a single article and the number of times the words appear in each article. 
+
+```{r cast_dtm}
+dtm_articles <- text_tokens %>%
+  count(word, article_id) %>%
+  cast_dtm(article_id, word, n)
+
+as.matrix(dtm_articles)[1:4, 1000:1004]
+```
+Next, we use Latent Dirichlet allocation (LDA) which is a standard topic model. This model searches for patterns of words rather than predicting. 
+
+```{r lda}
+lda_out <- LDA(
+  dtm_articles,
+  k = 2,
+  method = "Gibbs",
+  control = list(seed = 42)
+  )
+
+lda_out
+glimpse(lda_out)
+```
+
+we can see that there are different 'functions' to this lda_out. We use beta, which is the probability of words within the topic. 
+
+```{r lda topics}
+lda_topics <- lda_out %>%
+  tidy(matrix = "beta") %>% 
+  arrange(desc(beta))
+
+lda_topics
+```
+
+
+#### interpreting the topics
+
+Since we want to interpret each topic, it make sense to see the most common words that has the highest probability in each topic. For the code below, we take a look at the top 15 words in each topic. 
+
+``` {r lda_word_prob}
+word_probs <- lda_topics %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  mutate(term = fct_reorder(term, beta))
+
+word_probs %>% 
+  ggplot(aes(x=term, y=beta, fill = as.factor(topic) ) ) + 
+  geom_col(show.legend=FALSE) + 
+  facet_wrap(~ topic, scales ="free") + 
+  coord_flip()
+```
+
+The first topic seems to be talking about the connection between government and pok, while the second topic seems to be talking about gastech. 
+
+We can further look into analysing this using 3 or more topics
+
+```{r more_topics, echo=FALSE}
+lda_topics3 <- LDA(
+  dtm_articles,
+  k = 3,
+  method = "Gibbs",
+  control = list(seed = 42)
+  ) %>%
+  tidy(matrix = "beta") %>% 
+  arrange(desc(beta))
+
+word_probs3 <- lda_topics3 %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  mutate(term = fct_reorder(term, beta))
+
+word_probs3 %>% 
+  ggplot(aes(x=term, y=beta, fill = as.factor(topic) ) ) + 
+  geom_col(show.legend=FALSE) + 
+  facet_wrap(~ topic, scales ="free") + 
+  coord_flip()
+
+lda_topics4 <- LDA(
+  dtm_articles,
+  k = 4,
+  method = "Gibbs",
+  control = list(seed = 42)
+  ) %>%
+  tidy(matrix = "beta") %>% 
+  arrange(desc(beta))
+
+word_probs4 <- lda_topics4 %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  mutate(term = fct_reorder(term, beta))
+
+word_probs4 %>% 
+  ggplot(aes(x=term, y=beta, fill = as.factor(topic) ) ) + 
+  geom_col(show.legend=FALSE) + 
+  facet_wrap(~ topic, scales ="free") + 
+  coord_flip()
+```
+
+Adding topics that are different is good but if we start repeating topics, we've gone too far. 
+
+This is the end of the intro to text analysis for now! 
