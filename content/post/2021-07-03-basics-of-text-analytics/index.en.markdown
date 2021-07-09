@@ -2,7 +2,7 @@
 title: "Basics of Text Analytics"
 author: Ng Yen Ngee
 date: '2021-06-23'
-lastmod: '2021-07-03'
+lastmod: '2021-07-10'
 slug: []
 cover: "/img/text_analytics.jpg"
 categories: []
@@ -40,6 +40,7 @@ Our very first step of course is to load the packages that would be useful for u
 library(tidyverse)
 library(tidytext)
 library(textdata)
+library(topicmodels)
 ```
 
 * tidyverse: there are many reasons why this is such an awesome package which you can easily find online. Meanwhile, trust that we need to use this for text analytics 
@@ -53,15 +54,17 @@ This set of data is obtained by scrapping through 845 text files. I will run thr
 ```r
 articles_data <- read_csv(new_article_conn)
 articles_data$published_date <- as.Date(articles_data$published_date, "%d/%m/%Y")
-articles_data <- articles_data %>% 
-  dplyr::select(source, published_date, location, title, author, text)
+articles_data <- articles_data %>%
+  mutate(article_id = paste(source,index, sep= "_")) %>%
+  dplyr::select(article_id, source, published_date, location, title, author, text)
 
 glimpse(articles_data)
 ```
 
 ```
 ## Rows: 845
-## Columns: 6
+## Columns: 7
+## $ article_id     <chr> "All News Today_121", "All News Today_135", "All News T~
 ## $ source         <chr> "All News Today", "All News Today", "All News Today", "~
 ## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, 1998-03-20, 1998-0~
 ## $ location       <chr> "ELODIS, Kronos", "ABILA, Kronos", "ABILA, Kronos", "EL~
@@ -616,3 +619,138 @@ sentiment_by_grp %>%
 <img src="{{< blogdown/postref >}}index.en_files/figure-html/sentiment_by_group_viz-1.png" width="672" />
 
   
+### Topic Modeling 
+
+#### setting up topic modeling df
+
+Clustering	| Topic Modeling
+----------------------- | ------------------------
+Clusters are uncovered based on distance, which is continuous | Topics are uncovered based on word frequency, which is discrete.
+Every object is assigned to a single cluster. | Every document is a mixture (i.e., partial member) of every topic.
+
+We start off with the bag of words, which has rows of words from all our document. We use `cast_dtm` which essentially creates a sparse matrix (a matrix with lots of 0s) with each row representing a single article and the number of times the words appear in each article. 
+
+
+```r
+dtm_articles <- text_tokens %>%
+  count(word, article_id) %>%
+  cast_dtm(article_id, word, n)
+
+as.matrix(dtm_articles)[1:4, 1000:1004]
+```
+
+```
+##                       Terms
+## Docs                   ceremony certainty cesare cfo chain
+##   Athena Speaks_140           0         0      0   0     0
+##   Athena Speaks_466           0         0      0   0     0
+##   Central Bulletin_125        0         0      0   0     0
+##   Central Bulletin_673        0         0      0   0     0
+```
+Next, we use Latent Dirichlet allocation (LDA) which is a standard topic model. This model searches for patterns of words rather than predicting. 
+
+
+```r
+lda_out <- LDA(
+  dtm_articles,
+  k = 2,
+  method = "Gibbs",
+  control = list(seed = 42)
+  )
+
+lda_out
+```
+
+```
+## A LDA_Gibbs topic model with 2 topics.
+```
+
+```r
+glimpse(lda_out)
+```
+
+```
+## Formal class 'LDA_Gibbs' [package "topicmodels"] with 16 slots
+##   ..@ seedwords      : NULL
+##   ..@ z              : int [1:56205] 2 2 2 2 2 1 2 2 1 1 ...
+##   ..@ alpha          : num 25
+##   ..@ call           : language LDA(x = dtm_articles, k = 2, method = "Gibbs", control = list(seed = 42))
+##   ..@ Dim            : int [1:2] 845 5919
+##   ..@ control        :Formal class 'LDA_Gibbscontrol' [package "topicmodels"] with 14 slots
+##   ..@ k              : int 2
+##   ..@ terms          : chr [1:5919] "00" "0003" "0230" "05" ...
+##   ..@ documents      : chr [1:845] "Athena Speaks_140" "Athena Speaks_466" "Central Bulletin_125" "Central Bulletin_673" ...
+##   ..@ beta           : num [1:2, 1:5919] -12.58 -6.79 -12.58 -7.85 -12.58 ...
+##   ..@ gamma          : num [1:845, 1:2] 0.459 0.547 0.5 0.425 0.531 ...
+##   ..@ wordassignments:List of 5
+##   .. ..$ i   : int [1:45261] 1 1 1 1 1 1 1 1 1 1 ...
+##   .. ..$ j   : int [1:45261] 1 15 58 115 173 202 375 448 454 878 ...
+##   .. ..$ v   : num [1:45261] 2 2 2 2 2 2 2 2 1 1 ...
+##   .. ..$ nrow: int 845
+##   .. ..$ ncol: int 5919
+##   .. ..- attr(*, "class")= chr "simple_triplet_matrix"
+##   ..@ loglikelihood  : num -408235
+##   ..@ iter           : int 2000
+##   ..@ logLiks        : num(0) 
+##   ..@ n              : int 56205
+```
+
+we can see that there are different 'functions' to this lda_out. We use beta, which is the probability of words within the topic. 
+
+
+```r
+lda_topics <- lda_out %>%
+  tidy(matrix = "beta") %>% 
+  arrange(desc(beta))
+
+lda_topics
+```
+
+```
+## # A tibble: 11,838 x 3
+##    topic term            beta
+##    <int> <chr>          <dbl>
+##  1     2 gastech       0.0425
+##  2     1 government    0.0289
+##  3     1 pok           0.0200
+##  4     1 police        0.0198
+##  5     2 gas           0.0164
+##  6     2 sanjorge      0.0133
+##  7     2 international 0.0127
+##  8     1 people        0.0118
+##  9     1 karel         0.0115
+## 10     2 president     0.0104
+## # ... with 11,828 more rows
+```
+
+
+#### interpreting the topics
+
+Since we want to interpret each topic, it make sense to see the most common words that has the highest probability in each topic. For the code below, we take a look at the top 15 words in each topic. 
+
+
+```r
+word_probs <- lda_topics %>%
+  group_by(topic) %>%
+  top_n(15, beta) %>%
+  ungroup() %>%
+  mutate(term = fct_reorder(term, beta))
+
+word_probs %>% 
+  ggplot(aes(x=term, y=beta, fill = as.factor(topic) ) ) + 
+  geom_col(show.legend=FALSE) + 
+  facet_wrap(~ topic, scales ="free") + 
+  coord_flip()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/lda_word_prob-1.png" width="672" />
+
+The first topic seems to be talking about the connection between government and pok, while the second topic seems to be talking about gastech. 
+
+We can further look into analysing this using 3 or more topics
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/more_topics-1.png" width="672" /><img src="{{< blogdown/postref >}}index.en_files/figure-html/more_topics-2.png" width="672" />
+
+Adding topics that are different is good but if we start repeating topics, we've gone too far. 
+
+This is the end of the intro to text analysis for now! 
