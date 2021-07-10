@@ -1,0 +1,108 @@
+---
+title: "Lesson 9 visualizing and Analyzing Network"
+author: "Ng Yen Ngee"
+date: '2021-07-10'
+slug: []
+cover: "/img/network_analysis.png"
+categories: []
+tags: ["R", "network analysis", "MITB"]
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+## Introduction to in-class exercise 9
+As part of my lesson in SMU Visual Analytics, prof teaches data visualization in R using Rmarkdown. The post below acts as both an in-class exercise for the lesson, as well as my notes. 
+
+Note to prof, if he is here: I have reorganized the in class exercise in a way that makes sense to me, but may not follow the step by step process prof went through in class. I have added additional items which I have kept as haphazard notes on my desktop.  Hope this is alright! 
+
+## Preperation 
+### Loading packages
+
+Our very first step of course is to load the packages that would be useful for us especially [tidygraph](https://www.data-imaginist.com/2017/introducing-tidygraph/)
+
+```{r load package, echo=TRUE, results='hide'}
+library(tidyverse)
+library(tidygraph)   # 
+library(igraph)      #
+library(ggraph)      #
+library(visNetwork)  # support interactivity
+library(lubridate)
+library(clock)
+```
+
+
+### Loading data 
+
+The data loaded here has been cleaned by our professor and it is already in the format required for the network analysis. Prof will run through how to create the data on another day. 
+
+#### edges data
+min. requirement for edge data is to have 2 columns: source and target. 
+
+```{r load_data_edge}
+GAStech_edges <- read_csv("data/GAStech_email_edge-v2.csv")
+
+#some of the data is still a little dirty, especially wrt the data type
+GAStech_edges$SentDate <- dmy(GAStech_edges$SentDate) #convert to date time format 
+GAStech_edges$Weekday = wday(GAStech_edges$SentDate, label=TRUE, abbr=FALSE) # extract day of week 
+
+glimpse(GAStech_edges)
+```
+
+```{r edges_agg}
+GAStech_edges_agg <- GAStech_edges %>%
+  filter(MainSubject == "Work related") %>%
+  group_by(source, target, Weekday) %>%
+  summarise(Weight=n()) %>%   # counts the number of times the source sent to the target in each Weekday
+  filter(source!=target) %>%  #to avoid emails being sent to themselves. 
+  filter(Weight>1) %>% 
+  ungroup()
+
+glimpse(GAStech_edges_agg)
+  
+```
+
+#### Nodes data
+
+nodes --> min. requirement for nodes data is ID. It is a good practice to add a label so that we put meaning. 
+The important thing is that the source and target columns in edge should correspond to the id in nodes
+
+```{r load_data_node}
+GAStech_nodes <- read_csv("data/GAStech_email_node.csv")
+glimpse(GAStech_nodes)
+```
+
+## Build the Network Graph 
+
+From the tidygraph, we use `tbl_graph` to create the network graph. We need to fill in 3 attributes: `nodes`, `edges` and `directed`. 
+
+```{r tbl_graph}
+GAStech_graph <- tbl_graph(nodes = GAStech_nodes, 
+                          edges = GAStech_edges_agg, 
+                          directed = TRUE)
+GAStech_graph
+```
+
+
+First we need to choose the Graph Layout. Need to understand the different layout and how it is suited for what we want to show. 
+
+```{r, layout="l-body-outset", fig.width=5, echo=FALSE}
+knitr::include_graphics("image/layout_types.JPG")
+```
+We can also can view the layouts in [`ggraph`](https://www.data-imaginist.com/2017/ggraph-introduction-layouts/)
+
+
+Next we can choose the visual attributes. 
+
+```{r, layout="l-body-outset", fig.width=5, echo=FALSE}
+knitr::include_graphics("image/visual_attributes.JPG")
+```
+
+
