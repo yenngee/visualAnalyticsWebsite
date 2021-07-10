@@ -12,13 +12,14 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE,
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=TRUE,
                       eval=TRUE,
                       message = FALSE,
                       warning = FALSE)
 ```
 
-## Introduction to in-class exercise 9
+# Introduction to in-class exercise 9
 As part of my lesson in SMU Visual Analytics, prof teaches data visualization in R using Rmarkdown. The post below acts as both an in-class exercise for the lesson, as well as my notes. 
 
 Note to prof, if he is here: I have reorganized the in class exercise in a way that makes sense to me, but may not follow the step by step process prof went through in class. I have added additional items which I have kept as haphazard notes on my desktop.  Hope this is alright! 
@@ -93,16 +94,242 @@ GAStech_graph
 
 First we need to choose the Graph Layout. Need to understand the different layout and how it is suited for what we want to show. 
 
-```{r, layout="l-body-outset", fig.width=5, echo=FALSE}
+```{r, layout="l-body-outset", fig.width=3, echo=FALSE}
 knitr::include_graphics("image/layout_types.JPG")
 ```
+
 We can also can view the layouts in [`ggraph`](https://www.data-imaginist.com/2017/ggraph-introduction-layouts/)
 
 
 Next we can choose the visual attributes. 
 
-```{r, layout="l-body-outset", fig.width=5, echo=FALSE}
+```{r, layout="l-body-outset", fig.width=3, echo=FALSE}
 knitr::include_graphics("image/visual_attributes.JPG")
 ```
 
+### Basic Network Graph 
+
+We start off with a basic network graph, not definiting any layout nor visual attributes. 
+
+```{r basic}
+ggraph(GAStech_graph) + 
+  geom_edge_link() +
+  geom_node_point()
+```
+
+We can't really get much information out of this except that we know they are connected to each other. XD 
+
+### Add theme
+
+```{r theme}
+g <- ggraph(GAStech_graph) + 
+  geom_edge_link(aes()) +
+  geom_node_point(aes())
+
+g + theme_graph()
+```
+#### Change Colour
+
+```{r change_colour}
+g <- ggraph(GAStech_graph) + 
+  geom_edge_link(aes(colour = 'grey50')) +
+  geom_node_point(aes(colour = 'grey40'))
+
+g + theme_graph(background = 'grey30')
+```
+
+
+### Change Layout
+
+we change layout within the `ggraph` function. Below we use Fruchterman and Reingold layout as an example. 
+
+```{r change_layout}
+g <- ggraph(GAStech_graph, 
+            layout = 'fr') + 
+  geom_edge_link(aes()) +
+  geom_node_point(aes())
+
+g + theme_graph()
+```
+
+
+### Modifying Nodes 
+
+we can modify the nodes using the aes() under the geom_node_point().
+
+```{r modify_node}
+g <- ggraph(GAStech_graph, 
+            layout = 'nicely') + 
+  geom_edge_link(aes()) +
+  geom_node_point(aes(colour = Department, size=3))
+
+g + theme_graph()
+```
+
+### Modifying Edges 
+
+```{r modify_edges}
+g <- ggraph(GAStech_graph, 
+            layout = 'nicely') + 
+  geom_edge_link(aes(width = Weight), 
+                 alpha = 0.2) +
+  scale_edge_width(range = c(0.1,5)) +
+  geom_node_point(aes(colour = Department, size=3))
+
+g + theme_graph()
+```
+
+### Working with facet_edges() 
+
+```{r facet_edges}
+set_graph_style()
+
+g <- ggraph(GAStech_graph, 
+            layout = 'nicely') + 
+  geom_edge_link(aes(width = Weight), 
+                 alpha = 0.2) +
+  scale_edge_width(range = c(0.1,5)) +
+  geom_node_point(aes(colour = Department), size=2) +
+  theme(legend.position = 'bottom')  # change legend to bottom
+
+g + facet_edges(~Weekday) +
+  th_foreground(foreground = "grey80", border = TRUE) # adding a border 
+
+```
+
+### Working with facet_nodes() 
+
+```{r facet_nodes}
+set_graph_style()
+
+g <- ggraph(GAStech_graph, 
+            layout = 'nicely') + 
+  geom_edge_link(aes(width = Weight), 
+                 alpha = 0.2) +
+  scale_edge_width(range = c(0.1,5)) +
+  geom_node_point(aes(colour = Department), size=2)+
+  theme(legend.position = 'bottom') 
+
+g + facet_nodes(~Department) +
+  th_foreground(foreground = "grey80", border = TRUE)
+
+```
+**Interpretation**: Interestingly, senior executive don't really talk to each other on email. There are different levels of communication within different department. e.g. In security department, that there is one group that communicate a lot, and specifically one lone ranger that does not really communicate with the rest of the department. 
+
+## Network Metrics Analysis 
+
+### Find centrality 
+
+To obtain better interpretation of Analysis, we would need a metric for measurement. 
+
+* in-degree/out-degree
+* betweenness: centrality measure of vertex within a graph. Importance of a particular node in connecting between various nodes. if we cut of that node, can we still connect? is it the same connection or longer connection? this measures the questions. 
+* closeness: how close one node is to another in terms of connections/links. 
+
+`tidygraph` and `igraph` provides many measures of centrality. 
+
+```{r metrics_old_mthd}
+## OLD CODE
+# g <- GAStech_graph %>%
+#   mutate(betweenness_centrality = centrality_betweenness()) %>% # we mutate to calculate using the centrality_betweenness 
+#   ggraph(layout = 'nicely') + 
+#   geom_edge_link(aes(width = Weight), 
+#                  alpha = 0.2) +
+#   scale_edge_width(range = c(0.1,5)) +
+#   geom_node_point(aes(colour = Department, size=betweenness_centrality))+ # map the centrality_betweenness to size
+#   theme(legend.position = 'bottom') 
+# 
+# g + theme_graph()
+
+## NEW CODE
+g <- GAStech_graph %>%
+  ggraph(layout = 'nicely') + 
+  geom_edge_link(aes(width = Weight), 
+                 alpha = 0.2) +
+  scale_edge_width(range = c(0.1,5)) +
+  geom_node_point(aes(colour = Department, size=centrality_betweenness())) + # map the centrality_betweenness to size
+  theme(legend.position = 'bottom') 
+
+g + theme_graph()
+``` 
+
+**Interpretation**: we can see the 2 guys in the middle from department administration has the highest connection within the organization. 
+
+### Find Community 
+
+```{r community}
+## OLD CODE
+g <- GAStech_graph %>%
+  mutate(community = as.factor(group_edge_betweenness(weights = Weight, directed=TRUE))) %>% # we mutate to calculate using the centrality_betweenness
+  ggraph(layout = 'fr') +
+  geom_edge_link(aes(width = Weight),
+                 alpha = 0.2) +
+  scale_edge_width(range = c(0.1,5)) +
+  geom_node_point(aes(colour = community)) # map the community to colour
+
+g + theme_graph()
+``` 
+
+In this case, the number of communities is too high and too granular. We should explore other method to detect community. 
+we can also use facet_node, to view the networks in each community. :) 
+
+## Interactive Network Graph 
+This section here mostly use the package [`visNetwork`](https://datastorm-open.github.io/visNetwork/). This package is also compatible to Shiny. 
+
+### Changes to the data 
+The data required is slightly different in that the edge must have "from" and "to" columns, 'label' must also be in node list. 
+```{r update_data_for_network_viz}
+GAStech_edges_agg_viz <- GAStech_edges %>%
+  left_join(GAStech_nodes, by = c("sourceLabel" = "label")) %>%
+  rename(from = id) %>%
+  left_join(GAStech_nodes, by = c("targetLabel" = "label")) %>%
+  rename(to = id)  %>%
+  filter(MainSubject == "Work related") %>%
+  group_by(from,to) %>%
+  summarise(weight = n()) %>%
+  filter(from!=to) %>%
+  filter(weight>1) %>%
+  ungroup()
+
+glimpse(GAStech_edges_agg_viz)
+```
+
+
+### Basic Interactive Graph
+
+```{r visNetwork}
+visNetwork(GAStech_nodes, GAStech_edges_agg_viz) %>%
+  visIgraphLayout(layout = "layout_with_fr")
+```
+
+
+### Grouping Nodes 
+
+if we create a column called `group` in the node dataframe, then `visNetwork` will be able to automatically colour each category in the `group` field. 
+
+```{r visNetwork_group}
+GAStech_nodes$group <- GAStech_nodes$Department
+
+visNetwork(GAStech_nodes, GAStech_edges_agg_viz) %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visLegend() %>%
+  visLayout(randomSeed=123)
+
+```
+
+### Additional Interactivity
+
+We use `visOptions` to add on interactivity. 
+
+```{r add_interaction}
+visNetwork(GAStech_nodes, GAStech_edges_agg_viz) %>%
+  visIgraphLayout(layout = "layout_with_fr") %>%
+  visOptions(highlightNearest=TRUE, 
+             nodesIdSelection=TRUE) %>%
+  visLegend() %>%
+  visLayout(randomSeed=123)
+
+```
+
+We can select by using the drop down or clicking on a single node. The nodes which is connected to the selected node will be highlighted. 
 

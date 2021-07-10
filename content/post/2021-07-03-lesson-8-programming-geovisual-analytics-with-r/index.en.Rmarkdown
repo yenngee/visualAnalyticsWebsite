@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo=TRUE,
 ```
 
 
-## Introduction to in-class exercise 8
+# Introduction to in-class exercise 8
 As part of my lesson in SMU Visual Analytics, prof teaches data visualization in R using Rmarkdown. The post below acts as both an in-class exercise for the lesson, as well as my notes. 
 
 Note to prof, if he is here: I have reorganized the in class exercise in a way that makes sense to me, but may not follow the step by step process prof went through in class. I have added additional items which I have kept as haphazard notes on my desktop.  Hope this is alright! 
