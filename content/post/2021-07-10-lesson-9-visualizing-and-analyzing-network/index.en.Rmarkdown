@@ -333,3 +333,4 @@ visNetwork(GAStech_nodes, GAStech_edges_agg_viz) %>%
 
 We can select by using the drop down or clicking on a single node. The nodes which is connected to the selected node will be highlighted. 
 
+--end--
