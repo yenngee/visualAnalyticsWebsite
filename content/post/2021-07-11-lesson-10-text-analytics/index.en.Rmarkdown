@@ -1,0 +1,164 @@
+---
+title: "Lesson 10 Text Analytics"
+author: "Ng Yen Ngee"
+date: '2021-07-11'
+lastmod: '2021-07-11'
+slug: []
+cover: "/img/text_analytics.jpg"
+categories: []
+tags: ["R", 'Text Analytics', "MITB"]
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=TRUE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# Introduction to in-class exercise 10
+As part of my lesson in SMU Visual Analytics, prof teaches data visualization in R using Rmarkdown. The post below acts as both an in-class exercise for the lesson, as well as my notes. 
+
+Note to prof, if he is here: I have reorganized the in class exercise in a way that makes sense to me, but may not follow the step by step process prof went through in class. I have added additional items which I have kept as haphazard notes on my desktop.  Hope this is alright! 
+
+
+## Preperation 
+
+### Loading packages
+
+Our very first step of course is to load the packages that would be useful for us. 
+
+```{r load package, echo=TRUE, results='hide'}
+library(tidyverse)
+library(tidytext)
+library(widyr)
+library(wordcloud)
+library(ggwordcloud)
+library(textdata)
+library(textplot)
+library(DT)
+library(tidygraph)
+library(ggraph)
+library(igraph)
+#time
+library(lubridate)
+library(hms)
+```
+
+### Load data 
+
+```{r read_files_fn, eval=FALSE}
+news20 <- "data/20news/"
+
+read_folder <- function(infolder) {
+  tibble(file=dir(infolder, 
+                  full.names=TRUE)) %>% 
+    mutate(text = map(file, read_lines)) %>%
+    transmute(id = basename(file), text) %>%
+    unnest(text)
+}
+
+# how the function works 
+# alt.atheism_df <- read_folder("data/20news/alt.atheism")
+```
+
+```{r read_files}
+# raw_text <- tibble(folder = dir(news20, full.names=TRUE)) %>%
+#   mutate(folder_out = map(folder, read_folder)) %>%
+#   unnest(cols = c(folder_out)) %>%
+#   transmute(newsgroup = basename(folder), id, text)
+# 
+# write_rds(raw_text, "data/rds/news20.rds")
+
+raw_text <- read_rds("data/rds/news20.rds")
+glimpse(raw_text)
+
+```
+
+To check if there is the correct number of 
+
+```{r initial_eda}
+raw_text %>%
+  group_by(newsgroup) %>%
+  summarize(messages=n_distinct(id)) %>%
+  ggplot(aes(messages, newsgroup)) +
+  geom_col(fill="lightblue") + 
+  labs(y=NULL)
+```
+
+
+### Clean Data 
+
+```{r clean_data}
+cleaned_text <- raw_text %>%
+  group_by(newsgroup, id) %>%
+  filter(cumsum(text == "") >0, 
+         cumsum(str_detect(text, "^--")) == 0) %>%
+  ungroup()
+
+cleaned_text 
+
+cleaned_text <- cleaned_text %>% 
+  filter(str_detect(text, "^[^>]+[A-Za-z\\d]") | text == "", 
+         !str_detect(text, "writes(:|\\.\\.\\.)$"),
+         !str_detect(text, "^In article <"))
+
+cleaned_text 
+```
+
+## Get a bag of words 
+
+### Tokenize 
+```{r token no stopwords}
+# usenet_words_own <- cleaned_text %>% 
+#   unnest_tokens(word, text) %>%
+#   anti_join(stop_words) # to remove stop words 
+# 
+# usenet_words_own
+
+usenet_words <- cleaned_text %>% 
+  unnest_tokens(word, text) %>%
+  filter(str_detect(word, "[a-z']$"), # only keep words. exclude all numeric. 
+         !word %in% stop_words$word) # to remove stop words 
+
+usenet_words 
+```
+
+### visualize 
+
+```{r agg_words}
+
+usenet_words %>% 
+  count(word, sort=TRUE)
+
+words_by_newsgroup <- usenet_words %>% 
+  count(newsgroup, word, sort=TRUE) %>% 
+  ungroup()
+
+words_by_newsgroup
+```
+
+To visualize the words, we can use word cloud 
+
+```{r wordcloud}
+wordcloud(words = words_by_newsgroup$word, 
+          freq = words_by_newsgroup$n, 
+          max.words = 100)
+```
+
+
+
+## TF-IDF
+
+
+```{r tfidf}
+tf_idf <- words_by_newsgroup %>% 
+  bind_tf_idf(word, newsgroup, n) %>%
+  arrange(desc(tf_idf))
+
+glimpse(tf_idf)
+```
