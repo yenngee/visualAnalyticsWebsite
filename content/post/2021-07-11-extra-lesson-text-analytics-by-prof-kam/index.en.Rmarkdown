@@ -1,16 +1,16 @@
 ---
-title: "Lesson 10 Text Analytics"
+title: "Extra Lesson Text Analytics by Prof Kam"
 author: "Ng Yen Ngee"
 date: '2021-07-11'
-lastmod: '2021-07-11'
 slug: []
-cover: "/img/text_analytics.jpg"
+cover: "/img/text_analytics2.jpg"
 categories: []
-tags: ["R", 'Text Analytics', "MITB"]
+tags: ['MITB', 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.retina = 3, 
@@ -46,8 +46,9 @@ library(ggraph)
 library(igraph)
 #time
 library(lubridate)
-library(hms)
+# library(hms)
 ```
+
 
 ### Load data 
 
@@ -89,7 +90,6 @@ raw_text %>%
   geom_col(fill="lightblue") + 
   labs(y=NULL)
 ```
-
 
 ### Clean Data 
 
@@ -147,9 +147,20 @@ To visualize the words, we can use word cloud
 ```{r wordcloud}
 wordcloud(words = words_by_newsgroup$word, 
           freq = words_by_newsgroup$n, 
-          max.words = 100)
+          max.words = 50)
 ```
 
+```{r ggwordcloud}
+set.seed(1234)
+
+words_by_newsgroup %>%
+  filter(n>5) %>%
+  ggplot(aes(label=word, size = n)) + 
+  geom_text_wordcloud() + 
+  theme_minimal() + 
+  facet_wrap(~newsgroup)
+
+```
 
 
 ## TF-IDF
@@ -162,3 +173,33 @@ tf_idf <- words_by_newsgroup %>%
 
 glimpse(tf_idf)
 ```
+
+
+```{r tfidf_viz}
+tf_idf %>%
+  filter(str_detect(newsgroup, "^sci\\.")) %>%
+  group_by(newsgroup) %>%
+  slice_max(tf_idf, n=12) %>%
+  ungroup() %>%
+  mutate(word = reorder(word,tf_idf)) %>%
+  ggplot(aes(tf_idf, word, fill=newsgroup)) +
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~newsgroup, scales = "free") + 
+  labs(x="tf-idf", 
+       y=NULL)
+```
+
+we want to know which newsgroup is more similar based on the words they use. 
+
+```{r widyr}
+newsgroup_cors <- words_by_newsgroup %>%
+  pairwise_cor(newsgroup, word,n,sort=TRUE)
+
+newsgroup_cors
+```
+
+```{r}
+
+
+```
+
