@@ -1,5 +1,5 @@
 ---
-title: "Extra Lesson Text Analytics by Prof Kam"
+title: "Lesson 10 Text Analytics by Prof Kam"
 author: "Ng Yen Ngee"
 date: '2021-07-11'
 slug: []
@@ -165,7 +165,7 @@ words_by_newsgroup %>%
 
 ## TF-IDF
 
-
+### create tfidf dataframe
 ```{r tfidf}
 tf_idf <- words_by_newsgroup %>% 
   bind_tf_idf(word, newsgroup, n) %>%
@@ -174,6 +174,7 @@ tf_idf <- words_by_newsgroup %>%
 glimpse(tf_idf)
 ```
 
+### visualize tfidf 
 
 ```{r tfidf_viz}
 tf_idf %>%
@@ -189,6 +190,7 @@ tf_idf %>%
        y=NULL)
 ```
 
+## find correlation between groups
 we want to know which newsgroup is more similar based on the words they use. 
 
 ```{r widyr}
@@ -199,7 +201,64 @@ newsgroup_cors
 ```
 
 ```{r}
-
+newsgroup_cors %>%
+  filter(correlation > .025) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link(aes(alpha = correlation, width = correlation)) +
+  geom_node_point(size=6, color="lightblue") +
+  geom_node_text(aes(label=name), color="red", repel=TRUE) + 
+  theme_void()
+  
 
 ```
 
+## ngrams
+We look at words as consecutive terms. 
+
+### bigrams 
+
+```{r bigrams}
+bigrams <- cleaned_text %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2)
+
+bigrams_sep <- bigrams %>% 
+  filter(bigram != 'NA') %>%
+  separate(bigram, c("word1", "word2"), sep=" ")
+
+bigrams_filtered <- bigrams_sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2%in% stop_words$word)
+
+bigrams_filtered
+```
+```{r bigram_viz}
+bigram_counts <- bigrams_filtered %>%
+  mutate(word = paste(word1, word2, sep=" ")) %>%
+  count(word, sort=TRUE) %>%
+  filter(n>3) 
+bigram_counts
+
+bigram_counts %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
+  theme_void()
+
+a <- grid::arrow(type="closed", 
+                 length=unit(.15, "inches"))
+bigram_counts %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link( #aes(edge_alpha = n), 
+                 show.legend = FALSE, 
+                 arrow = a, 
+                 end_cap = circle(.07, 'inches')
+                 ) +
+  geom_node_point(color = "lightblue", 
+                  size=5) +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
+  theme_void()
+```

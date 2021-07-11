@@ -1,5 +1,5 @@
 ---
-title: "Extra Lesson Text Analytics by Prof Kam"
+title: "Lesson 10 Text Analytics by Prof Kam"
 author: "Ng Yen Ngee"
 date: '2021-07-11'
 slug: []
@@ -268,7 +268,7 @@ words_by_newsgroup %>%
 
 ## TF-IDF
 
-
+### create tfidf dataframe
 
 ```r
 tf_idf <- words_by_newsgroup %>% 
@@ -289,6 +289,7 @@ glimpse(tf_idf)
 ## $ tf_idf    <dbl> 0.09557900, 0.09332499, 0.09003567, 0.08083722, 0.07829287, ~
 ```
 
+### visualize tfidf 
 
 
 ```r
@@ -307,6 +308,7 @@ tf_idf %>%
 
 <img src="{{< blogdown/postref >}}index.en_files/figure-html/tfidf_viz-1.png" width="672" />
 
+## find correlation between groups
 we want to know which newsgroup is more similar based on the words they use. 
 
 
@@ -335,4 +337,109 @@ newsgroup_cors
 ```
 
 
+```r
+newsgroup_cors %>%
+  filter(correlation > .025) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link(aes(alpha = correlation, width = correlation)) +
+  geom_node_point(size=6, color="lightblue") +
+  geom_node_text(aes(label=name), color="red", repel=TRUE) + 
+  theme_void()
+```
 
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-1-1.png" width="672" />
+
+## ngrams
+We look at words as consecutive terms. 
+
+### bigrams 
+
+
+```r
+bigrams <- cleaned_text %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2)
+
+bigrams_sep <- bigrams %>% 
+  filter(bigram != 'NA') %>%
+  separate(bigram, c("word1", "word2"), sep=" ")
+
+bigrams_filtered <- bigrams_sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2%in% stop_words$word)
+
+bigrams_filtered
+```
+
+```
+## # A tibble: 4,604 x 4
+##    newsgroup   id    word1        word2        
+##    <chr>       <chr> <chr>        <chr>        
+##  1 alt.atheism 54256 defines      god          
+##  2 alt.atheism 54256 term         preclues     
+##  3 alt.atheism 54256 science      ideas        
+##  4 alt.atheism 54256 ideas        drawn        
+##  5 alt.atheism 54256 supernatural precludes    
+##  6 alt.atheism 54256 scientific   assertions   
+##  7 alt.atheism 54256 religious    dogma        
+##  8 alt.atheism 54256 religion     involves     
+##  9 alt.atheism 54256 involves     circumventing
+## 10 alt.atheism 54256 gain         absolute     
+## # ... with 4,594 more rows
+```
+
+```r
+bigram_counts <- bigrams_filtered %>%
+  mutate(word = paste(word1, word2, sep=" ")) %>%
+  count(word, sort=TRUE) %>%
+  filter(n>3) 
+bigram_counts
+```
+
+```
+## # A tibble: 24 x 2
+##    word            n
+##    <chr>       <int>
+##  1 1 2            12
+##  2 1 3            12
+##  3 static void    10
+##  4 time pad       10
+##  5 1 4             8
+##  6 infield fly     7
+##  7 mat 28          6
+##  8 vv vv           6
+##  9 1 5             5
+## 10 cock crow       5
+## # ... with 14 more rows
+```
+
+```r
+bigram_counts %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
+  theme_void()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/bigram_viz-1.png" width="672" />
+
+```r
+a <- grid::arrow(type="closed", 
+                 length=unit(.15, "inches"))
+bigram_counts %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link( #aes(edge_alpha = n), 
+                 show.legend = FALSE, 
+                 arrow = a, 
+                 end_cap = circle(.07, 'inches')
+                 ) +
+  geom_node_point(color = "lightblue", 
+                  size=5) +
+  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
+  theme_void()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/bigram_viz-2.png" width="672" />
