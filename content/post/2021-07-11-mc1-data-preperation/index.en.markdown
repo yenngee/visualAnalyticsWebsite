@@ -2,7 +2,7 @@
 title: 'MC1: Data Preperation'
 author: "Ng Yen Ngee"
 date: '2021-07-11'
-lastmod: '2021-07-12'
+lastmod: '2021-07-15'
 slug: []
 cover: "/img/data_preperation.jpg"
 categories: []
@@ -31,6 +31,8 @@ library(tidyverse)
 library(tidytext)
 library(lubridate)
 library(naniar)
+library(wordcloud)
+library(ggwordcloud)
 ```
 
 ## Preparing News Articles 
@@ -167,21 +169,100 @@ cleaned_text <- read_rds("data/news_article_raw.rds")
 
 
 ```r
+custom_stop_words <- tribble(
+  ~word, ~lexicon,
+  "kronos", "CUSTOM",
+  "abila",  "CUSTOM"
+)
+stop_words2 <- stop_words %>%
+  bind_rows(custom_stop_words)
+
 token_words <- cleaned_text %>% 
   unnest_tokens(word, text) %>%
   filter(str_detect(word, "[a-z']$"), # only keep words. exclude all numeric. 
-         !word %in% stop_words$word) # to remove stop words 
+         !word %in% stop_words2$word) # to remove stop words 
+
+write_rds(token_words, "data/news_article_token_words.rds")
 
 glimpse(token_words)
 ```
 
 ```
-## Rows: 56,747
+## Rows: 55,014
 ## Columns: 6
 ## $ source     <chr> "All News Today", "All News Today", "All News Today", "All ~
 ## $ article_id <chr> "All News Today_121", "All News Today_121", "All News Today~
 ## $ title      <chr> "POK PROTESTS END IN ARRESTS", "POK PROTESTS END IN ARRESTS~
 ## $ published  <chr> "2005/04/06", "2005/04/06", "2005/04/06", "2005/04/06", "20~
 ## $ location   <chr> "ELODIS, Kronos", "ELODIS, Kronos", "ELODIS, Kronos", "ELOD~
-## $ word       <chr> "fifteen", "protectors", "kronos", "pok", "activist", "orga~
+## $ word       <chr> "fifteen", "protectors", "pok", "activist", "organization",~
 ```
+
+
+```r
+count_words <- token_words %>% 
+  count(word, sort=TRUE)
+
+wordcloud(words = count_words$word, 
+          freq = count_words$n, 
+          max.words = 50)
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/visualize_words-1.png" width="672" />
+
+
+```r
+set.seed(1234)
+
+words_by_articles <- token_words %>% 
+  count(source, word, sort=TRUE) %>% 
+  ungroup()
+
+words_by_articles %>%
+  filter(n>20) %>%
+  ggplot(aes(label=word, size = n)) + 
+  geom_text_wordcloud() + 
+  theme_minimal() + 
+  facet_wrap(~source)
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/words_for_each_article-1.png" width="672" />
+
+### bigrams 
+
+
+```r
+bigrams <- cleaned_text %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2)
+
+bigrams_sep <- bigrams %>% 
+  filter(bigram != 'NA') %>%
+  separate(bigram, c("word1", "word2"), sep=" ")
+
+bigrams_filtered <- bigrams_sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2%in% stop_words$word)%>%
+  mutate(word = paste(word1, word2, sep=" "))
+
+write_rds(token_words, "data/news_article_bigrams.rds")
+
+bigrams_filtered
+```
+
+```
+## # A tibble: 22,573 x 8
+##    source   article_id   title       published  location   word1 word2  word    
+##    <chr>    <chr>        <chr>       <chr>      <chr>      <chr> <chr>  <chr>   
+##  1 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ kron~ pok    kronos ~
+##  2 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ pok   activ~ pok act~
+##  3 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ acti~ organ~ activis~
+##  4 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ kron~ feder~ kronos ~
+##  5 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ fede~ police federal~
+##  6 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ poli~ yeste~ police ~
+##  7 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ tisk~ bend   tiskele~
+##  8 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ bend  gaste~ bend ga~
+##  9 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ gast~ facil~ gastech~
+## 10 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ faci~ swayi~ facilit~
+## # ... with 22,563 more rows
+```
+
