@@ -80,12 +80,14 @@ read_folder <- function(infolder) {
     mutate(source = str_match(text, "SOURCE:\\s*(.*?)\\s*NEWLINE")[,2], 
            title = str_match(text, "TITLE:\\s*(.*?)\\s*NEWLINE")[,2], 
            published = str_match(text, "PUBLISHED:\\s*(.*?)\\s*NEWLINE")[,2], 
-           location = str_match(text, "LOCATION:\\s*(.*?)\\s*NEWLINE")[,2]) %>% 
+           location = str_match(text, "LOCATION:\\s*(.*?)\\s*NEWLINE")[,2], 
+           author = str_match(text, "AUTHOR:\\s*(.*?)\\s*NEWLINE")[,2]) %>% 
     # Remove the information from the text column 
     mutate(text = str_replace(text, "SOURCE:\\s*(.*?)\\s*NEWLINE", "")) %>% 
     mutate(text = str_replace(text, "TITLE:\\s*(.*?)\\s*NEWLINE", "")) %>% 
     mutate(text = str_replace(text, "PUBLISHED:\\s*(.*?)\\s*NEWLINE", "")) %>% 
     mutate(text = str_replace(text, "LOCATION:\\s*(.*?)\\s*NEWLINE", "")) %>% 
+    mutate(text = str_replace(text, "AUTHOR:\\s*(.*?)\\s*NEWLINE", "")) %>% 
     mutate(text = str_replace_all(text, "NEWLINE", ""))
 }
 
@@ -93,7 +95,7 @@ raw_text <- tibble(folder = dir(new_article_folder, full.names=TRUE)) %>%
   mutate(folder_out = map(folder, read_folder)) %>%
   unnest(cols = c(folder_out)) %>%
   mutate(article_id = paste(source, str_match(id, "[0-9]+"), sep="_")) %>%
-  transmute(source, article_id, text, title, published, location) 
+  transmute(source, article_id, text, title, published, location, author) 
 
 #output a rds file to read them easily. 
 write_rds(raw_text, "data/news_article_raw.rds")
@@ -108,13 +110,14 @@ glimpse(raw_text)
 
 ```
 ## Rows: 845
-## Columns: 6
+## Columns: 7
 ## $ source     <chr> "All News Today", "All News Today", "All News Today", "All ~
 ## $ article_id <chr> "All News Today_121", "All News Today_135", "All News Today~
 ## $ text       <chr> "  Fifteen members of the Protectors of Kronos (POK) activi~
 ## $ title      <chr> "POK PROTESTS END IN ARRESTS", "RALLY SCHEDULED IN SUPPORT ~
 ## $ published  <chr> "2005/04/06", "2012/04/09", "1993/02/02", "Petrus Gerhard",~
 ## $ location   <chr> "ELODIS, Kronos", "ABILA, Kronos", "ABILA, Kronos", "ELODIS~
+## $ author     <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
 ```
 
 ```r
@@ -131,6 +134,9 @@ date_b <- as.Date(raw_text$published,format="%d %B %Y")
 date_c <- as.Date(raw_text$published,format="%B %d, %Y")
 date_d <- as.Date(str_match(raw_text$text, "^[0-9]{4}/[0-9]{2}/[0-9]{2}"), format="%Y/%m/%d")
 date_e <- as.Date(str_match(raw_text$text, "^[0-9]{2} [A-Za-z]+ [0-9]{4}"), format="%d %B %Y")
+
+raw_text$text <- str_replace(raw_text$text, "^[0-9]{4}/[0-9]{2}/[0-9]{2}", "")
+raw_text$text <- str_replace(raw_text$text, "^[0-9]{2} [A-Za-z]+ [0-9]{4}", "")
                   
 date_a[is.na(date_a)] <- date_b[is.na(date_a)]
 date_a[is.na(date_a)] <- date_c[is.na(date_a)]
@@ -151,12 +157,13 @@ glimpse(cleaned_text)
 
 ```
 ## Rows: 845
-## Columns: 6
+## Columns: 7
 ## $ source         <chr> "All News Today", "All News Today", "All News Today", "~
 ## $ article_id     <chr> "All News Today_121", "All News Today_135", "All News T~
 ## $ text           <chr> "  Fifteen members of the Protectors of Kronos (POK) ac~
 ## $ title          <chr> "POK PROTESTS END IN ARRESTS", "RALLY SCHEDULED IN SUPP~
 ## $ location       <chr> "elodis, kronos", "abila, kronos", "abila, kronos", "el~
+## $ author         <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
 ## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, 1998-03-20, 1998-0~
 ```
 
@@ -188,13 +195,14 @@ glimpse(token_words)
 ```
 
 ```
-## Rows: 55,014
-## Columns: 6
+## Rows: 54,658
+## Columns: 7
 ## $ source     <chr> "All News Today", "All News Today", "All News Today", "All ~
 ## $ article_id <chr> "All News Today_121", "All News Today_121", "All News Today~
 ## $ title      <chr> "POK PROTESTS END IN ARRESTS", "POK PROTESTS END IN ARRESTS~
 ## $ published  <chr> "2005/04/06", "2005/04/06", "2005/04/06", "2005/04/06", "20~
 ## $ location   <chr> "ELODIS, Kronos", "ELODIS, Kronos", "ELODIS, Kronos", "ELOD~
+## $ author     <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
 ## $ word       <chr> "fifteen", "protectors", "pok", "activist", "organization",~
 ```
 
@@ -226,8 +234,6 @@ words_by_articles %>%
   facet_wrap(~source)
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/words_for_each_article-1.png" width="672" />
-
 ### bigrams 
 
 
@@ -250,19 +256,72 @@ bigrams_filtered
 ```
 
 ```
-## # A tibble: 22,573 x 8
-##    source   article_id   title       published  location   word1 word2  word    
-##    <chr>    <chr>        <chr>       <chr>      <chr>      <chr> <chr>  <chr>   
-##  1 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ kron~ pok    kronos ~
-##  2 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ pok   activ~ pok act~
-##  3 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ acti~ organ~ activis~
-##  4 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ kron~ feder~ kronos ~
-##  5 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ fede~ police federal~
-##  6 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ poli~ yeste~ police ~
-##  7 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ tisk~ bend   tiskele~
-##  8 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ bend  gaste~ bend ga~
-##  9 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ gast~ facil~ gastech~
-## 10 All New~ All News To~ POK PROTES~ 2005/04/06 ELODIS, K~ faci~ swayi~ facilit~
-## # ... with 22,563 more rows
+## # A tibble: 22,235 x 9
+##    source   article_id   title     published location author word1 word2 word   
+##    <chr>    <chr>        <chr>     <chr>     <chr>    <chr>  <chr> <chr> <chr>  
+##  1 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   kron~ pok   kronos~
+##  2 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   pok   acti~ pok ac~
+##  3 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   acti~ orga~ activi~
+##  4 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   kron~ fede~ kronos~
+##  5 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   fede~ poli~ federa~
+##  6 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   poli~ yest~ police~
+##  7 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   tisk~ bend  tiskel~
+##  8 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   bend  gast~ bend g~
+##  9 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   gast~ faci~ gastec~
+## 10 All New~ All News To~ POK PROT~ 2005/04/~ ELODIS,~ <NA>   faci~ sway~ facili~
+## # ... with 22,225 more rows
 ```
 
+
+```r
+cleaned_text %>% 
+  group_by(title) %>%
+  filter(n()>1) %>% 
+  summarize(n=n()) %>%
+  arrange(desc(n))
+```
+
+```
+## # A tibble: 115 x 2
+##    title                                                                       n
+##    <chr>                                                                   <int>
+##  1 VOICES - a blog about what is important to the people                      37
+##  2 Breaking: Emergency at GAStech Headquarters Building [Updates]             35
+##  3 VOICES - a blog on what is important to people                             32
+##  4 ON SCENE BLOG                                                              30
+##  5 ON THE SCENE BLOG                                                          30
+##  6 To break off itself: The emergency to GAStech quarters construction [u~    28
+##  7 Profile:  Elian Karel                                                       6
+##  8 ANNIVERSARY OF PROTESTS                                                     5
+##  9 POSSIBLE CONTAMINATION IN ELODIS                                            5
+## 10 A LOOK BACK AT A LIFE CUT TRAGICAL SHORT: ELIAN KAREL                       4
+## # ... with 105 more rows
+```
+
+
+```r
+cleaned_text %>%
+  group_by(title) %>%
+  add_count(source) %>%
+  ungroup() %>%
+  # filter(n()>1) %>% 
+  arrange(desc(n)) %>%
+  select(source, title, article_id)
+```
+
+```
+## # A tibble: 845 x 3
+##    source            title                                  article_id          
+##    <chr>             <chr>                                  <chr>               
+##  1 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  2 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  3 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  4 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  5 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  6 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  7 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  8 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+##  9 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+## 10 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
+## # ... with 835 more rows
+```
