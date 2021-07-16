@@ -6,7 +6,7 @@ lastmod: '2021-07-15'
 slug: []
 cover: "/img/p_vs_s.png"
 categories: []
-tags: ['MITB', 'Text Analytics', "Kronos Kidnapping"]
+tags: ['MITB', 'Text Analytics', "MC1"]
 output:
   blogdown::html_page: 
     toc: true

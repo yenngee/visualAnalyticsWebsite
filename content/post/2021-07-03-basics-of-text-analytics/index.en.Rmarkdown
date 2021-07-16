@@ -6,7 +6,7 @@ lastmod: '2021-07-10'
 slug: []
 cover: "/img/text_analytics.jpg"
 categories: []
-tags: ['Kronos Kidnapping', 'assignment', 'MITB', 'Text Analytics']
+tags: ['Kronos Kidnapping', 'MITB', 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
