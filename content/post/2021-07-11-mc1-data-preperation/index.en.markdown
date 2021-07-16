@@ -125,10 +125,15 @@ glimpse(raw_text)
 ```
 
 ### Clean data 
-We know that the most problematic column is the date column. There are several formats of dates within the column, at the same time, some of the dates can only be extracted from the main text. Hence we will need to clean them. 
+After loading the data, the next step is to clean the data.
+
+* **clean date**: We know that the most problematic column is the date column. There are several formats of dates within the column, at the same time, some of the dates can only be extracted from the main text. Hence we will need to clean them. Below are some of the steps we take. 
+* **set lowercase**: we want to be a little more consistent 
+* **replace nouns**: we know that there are certain words that makes sense when they are put together but when we tokenize the text, these words become butchered and lose their meaning. E.g. Protectors of Kronos, when tokenize becomes protectors, kronos, the of disappears because it is a stop word. kronos is the place and thus removes the meaning from it. protectors on its own do not mean much. 
 
 
 ```r
+# clean date 
 date_a <- as.Date(raw_text$published,format="%Y/%m/%d")
 date_b <- as.Date(raw_text$published,format="%d %B %Y")
 date_c <- as.Date(raw_text$published,format="%B %d, %Y")
@@ -145,11 +150,21 @@ date_a[is.na(date_a)] <- date_e[is.na(date_a)]
 
 raw_text$published_date <- date_a
 
+# set lower case 
 cleaned_text <- raw_text %>%
   select(-published) %>%
-  mutate(location = tolower(location)) # %>%
-  # replace_with_na(replace = list(location = c("elodis, kronos", "abila, kronos" , "centrum, tethys" , "davos, switzerland")))
+  mutate(location = tolower(location), 
+         title = tolower(title), 
+         text = tolower(text))
 
+# replace nouns 
+raw_text$text <- str_replace(raw_text$text, "protectors of kronos", "pok")
+raw_text$text <- str_replace(raw_text$text, "elian karel", "elian_karel")
+raw_text$text <- str_replace(raw_text$text, "elian ", "elian_karel")
+raw_text$text <- str_replace(raw_text$text, " karel", "elian_karel")
+
+
+# output to .rds file for future use in other posts. 
 write_rds(cleaned_text, "data/news_article_clean.rds")
 
 glimpse(cleaned_text)
@@ -160,8 +175,8 @@ glimpse(cleaned_text)
 ## Columns: 7
 ## $ source         <chr> "All News Today", "All News Today", "All News Today", "~
 ## $ article_id     <chr> "All News Today_121", "All News Today_135", "All News T~
-## $ text           <chr> "  Fifteen members of the Protectors of Kronos (POK) ac~
-## $ title          <chr> "POK PROTESTS END IN ARRESTS", "RALLY SCHEDULED IN SUPP~
+## $ text           <chr> "  fifteen members of the protectors of kronos (pok) ac~
+## $ title          <chr> "pok protests end in arrests", "rally scheduled in supp~
 ## $ location       <chr> "elodis, kronos", "abila, kronos", "abila, kronos", "el~
 ## $ author         <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
 ## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, 1998-03-20, 1998-0~
@@ -234,6 +249,8 @@ words_by_articles %>%
   facet_wrap(~source)
 ```
 
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/words_for_each_article-1.png" width="672" />
+
 ### bigrams 
 
 
@@ -249,8 +266,6 @@ bigrams_filtered <- bigrams_sep %>%
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2%in% stop_words$word)%>%
   mutate(word = paste(word1, word2, sep=" "))
-
-write_rds(token_words, "data/news_article_bigrams.rds")
 
 bigrams_filtered
 ```
@@ -274,54 +289,12 @@ bigrams_filtered
 
 
 ```r
-cleaned_text %>% 
-  group_by(title) %>%
-  filter(n()>1) %>% 
-  summarize(n=n()) %>%
-  arrange(desc(n))
+count_words <- bigrams_filtered%>% 
+  count(word, sort=TRUE)
+
+wordcloud(words = count_words$word, 
+          freq = count_words$n, 
+          max.words = 50)
 ```
 
-```
-## # A tibble: 115 x 2
-##    title                                                                       n
-##    <chr>                                                                   <int>
-##  1 VOICES - a blog about what is important to the people                      37
-##  2 Breaking: Emergency at GAStech Headquarters Building [Updates]             35
-##  3 VOICES - a blog on what is important to people                             32
-##  4 ON SCENE BLOG                                                              30
-##  5 ON THE SCENE BLOG                                                          30
-##  6 To break off itself: The emergency to GAStech quarters construction [u~    28
-##  7 Profile:  Elian Karel                                                       6
-##  8 ANNIVERSARY OF PROTESTS                                                     5
-##  9 POSSIBLE CONTAMINATION IN ELODIS                                            5
-## 10 A LOOK BACK AT A LIFE CUT TRAGICAL SHORT: ELIAN KAREL                       4
-## # ... with 105 more rows
-```
-
-
-```r
-cleaned_text %>%
-  group_by(title) %>%
-  add_count(source) %>%
-  ungroup() %>%
-  # filter(n()>1) %>% 
-  arrange(desc(n)) %>%
-  select(source, title, article_id)
-```
-
-```
-## # A tibble: 845 x 3
-##    source            title                                  article_id          
-##    <chr>             <chr>                                  <chr>               
-##  1 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  2 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  3 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  4 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  5 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  6 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  7 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  8 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-##  9 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-## 10 Homeland Illumin~ VOICES - a blog about what is importa~ Homeland Illuminati~
-## # ... with 835 more rows
-```
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/visualize_bigrams-1.png" width="672" />

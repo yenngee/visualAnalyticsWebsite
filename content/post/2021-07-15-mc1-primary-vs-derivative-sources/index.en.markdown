@@ -174,7 +174,7 @@ plot_derivative <- source_type_per_article %>%
         plot.title = element_text(size = 11.5, hjust = 0.5),
         plot.margin=unit(c(0.1,0.2,0.1,-.1),"cm"),
         axis.ticks.y = element_blank(), 
-        axis.text.y = element_text(hjust = 0.5)) + #theme_bw()$axis.text.y,
+        axis.text.y = element_text(hjust = 0.5)) + 
   ggtitle("Derivative") + 
   coord_flip() 
   
@@ -182,7 +182,6 @@ plot_primary <- source_type_per_article %>%
   filter(is_primary == "primary") %>%
   ggplot(aes(x=source, y=n)) +
   geom_bar(stat='identity', fill="#D55E00") +
-  # ylim(0,120)+
   scale_y_continuous(trans = 'reverse', limits=c(120,0))+ 
   theme(legend.position = 'none',
         axis.title.y = element_blank(),
