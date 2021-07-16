@@ -1,0 +1,151 @@
+---
+title: 'MC1: Who is bias to whom?'
+author: 'Ng Yen Ngee'
+date: '2021-07-16'
+lastmod: '2021-07-16'
+slug: []
+cover: "/img/bias.jpg"
+categories: []
+tags: ['MITB', 'Text Analytics', "MC1"]
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=TRUE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# Introduction 
+In this post, I will be running through the thought process of answering Q1 of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html):  
+Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? 
+
+The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/).
+
+## Preperation 
+### Load Packages 
+These are the packages used for this post. 
+```{r load package}
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(gridExtra)
+library(lubridate)
+```
+
+### Load Data 
+The data has been previously loaded, cleaned and transformed into a neat tibble dataframe [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/). 
+We load the cleaned data directly below: 
+
+```{r load_clean_text}
+cleaned_text <- read_rds("data/news_article_clean.rds")
+cleaned_text <- cleaned_text %>%
+  mutate(title = tolower(title))
+glimpse(cleaned_text)
+```
+
+### Tokenize Data
+The process of the tokenizing the data is written in detail [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/#tokenising). This is how the `token_words` look like. 
+
+```{r token_stopwords, echo=FALSE}
+custom_stop_words <- tribble(
+  ~word, ~lexicon,
+  "kronos", "CUSTOM",
+  "abila",  "CUSTOM"
+)
+stop_words2 <- stop_words %>%
+  bind_rows(custom_stop_words)
+
+token_words <- cleaned_text %>% 
+  unnest_tokens(word, text) %>%
+  filter(str_detect(word, "[a-z']$"), # only keep words. exclude all numeric. 
+         !word %in% stop_words2$word) # to remove stop words 
+```
+
+```{r token_words}
+glimpse(token_words)
+```
+## Analysis 
+### Frequency 
+We want to pick out certain words and see for each articles mentions it the highest. 
+
+```{r freq_of_pok}
+token_words %>%
+  filter(word == "pok") %>%
+  group_by(source) %>% 
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  mutate(source=fct_reorder(source,n)) %>%
+  ggplot(aes(x=source, y = n)) +
+  geom_bar(stat='identity') + 
+  coord_flip()
+```
+We see Kronos Star mention pok the most, while Centrum Sentinel mentions the least. 
+
+Let's see similar graph but including other words. 
+
+```{r freq_of_org}
+freq_of_org <- token_words %>%
+  filter(word %in% c("pok", "government", "gastech")) %>%
+  group_by(source) %>% 
+  summarize(total = n()) %>%
+  ungroup()
+
+perc_of_org <- token_words %>%
+  filter(word %in% c("pok", "government", "gastech")) %>%
+  group_by(source, word) %>% 
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  left_join(freq_of_org) %>% 
+  mutate(perc = n/total, 
+         source=fct_reorder(source,perc))
+
+perc_of_org %>%
+  ggplot(aes(x=source, y = n, fill=word)) +
+  geom_bar(stat='identity') + 
+  coord_flip() +
+  facet_wrap(~word)
+
+perc_of_org %>%
+  ggplot(aes(x=source, y = perc, fill=word)) +
+  geom_bar(stat='identity') + 
+  coord_flip() +
+  facet_wrap(~word)
+```
+
+### words association
+
+```{r words_associated_with_pok}
+pok_words <- token_words %>%
+  filter(word %in% c("pok"))
+
+pok_count_words <- token_words %>% 
+  filter(article_id %in% unique(pok_words$article_id)) %>% 
+  count(word, sort=TRUE) %>%
+  arrange(desc(n))
+
+pok_count_words %>% 
+  gg_plot()
+
+wordcloud(words = count_words$word, 
+          freq = count_words$n, 
+          max.words = 100)
+```
+```{r words_associated_with_pok}
+pok_words <- token_words %>%
+  filter(word %in% c("pok"))
+
+pok_count_words <- token_words %>% 
+  filter(article_id %in% unique(pok_words$article_id)) %>% 
+  count(word, sort=TRUE) %>%
+  arrange(desc(n))
+
+pok_count_words
+```
+
+### sentinent 
+
