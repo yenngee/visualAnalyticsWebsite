@@ -45,6 +45,8 @@ We load the cleaned data directly below:
 
 ```{r load_clean_text}
 cleaned_text <- read_rds("data/news_article_clean.rds")
+cleaned_text <- cleaned_text %>%
+  mutate(title = tolower(title))
 glimpse(cleaned_text)
 ```
 
@@ -72,19 +74,30 @@ From a visual inspection on the cleaned data, we can find two formats of time:
 str_detect("2359 random text hahaha", "^[0-2][0-9][0-5][0-9]") #time starts the article 
 str_detect("more random text 6:30 AM hahaha", "[0-1]?[0-9]:[0-5]{1}[0-9]{1} [AP]M") # is in the format 6:30 AM 
 ```
+
+#### 1) Identifying Primary/Derivative if 'time' is in the article
+
+Let's apply this to get a definition of whether a particular article is primary or derivative. 
+
 ```{r str_detect_df}
 cleaned_text$is_primary <- str_detect(cleaned_text$text, "^[0-2][0-9][0-5][0-9]") | str_detect(cleaned_text$text, "[0-1]?[0-9]:[0-5]{1}[0-9]{1} [AP]M")
 cleaned_text$is_primary <- if_else(cleaned_text$is_primary, "primary", "derivative")
-cleaned_text <- cleaned_text %>%
-  mutate(title = tolower(title))
+
 ```
 
+#### 2) Visualize type of articles per source_type
+
+**Step 1**: Not all of the news article source has both primary and derivative sources. Hence, we first create the complete data frame with all of the cleaned 
+**Step 2**: We then create `source_type_per_article` which is dataframe that counts the number of articles of type primary or derivative for each newspaper source. 
+**Step 3**: Unfortunately, for our visualization to be pretty, we'll need to sort it. I want to sort it by the percentile of primary articles out of the total number of articles each news source has. So this steps create `source_type_per_article_perc`. 
+**Step 4**: we do a `left_join`, and `fct_order` by the primary_perc to get the final data frame. 
 
 ```{r source_type_per_article}
-
+# Step 1 
 full_source_type_per_article <- expand_grid(source = unique(cleaned_text$source), 
                                              is_primary = c('primary', 'derivative')) 
-full_source_type_per_article
+
+# Step 2
 source_type_per_article <- cleaned_text %>%
   group_by(source, is_primary) %>%
   summarize(n = n()) %>% 
@@ -92,6 +105,7 @@ source_type_per_article <- cleaned_text %>%
   right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
   arrange(desc(n))
 
+# Step 3 
 source_type_per_article_perc <- source_type_per_article %>% 
   pivot_wider(names_from= is_primary, values_from=n) %>%
   replace_na(list(derivative=0L, primary=0L)) %>%
@@ -99,8 +113,7 @@ source_type_per_article_perc <- source_type_per_article %>%
          source = as.character(source)) %>%
   select(source, primary_perc)
 
-source_type_per_article_perc
-
+# Step 4 
 source_type_per_article <- source_type_per_article %>%
   left_join(source_type_per_article_perc) %>%
   mutate(source = fct_reorder(source, primary_perc))
@@ -108,6 +121,8 @@ source_type_per_article <- source_type_per_article %>%
 source_type_per_article
 
 ```
+
+**Pyramid plot style**
 
 ```{r plot_pyramid}
 plot_derivative <- source_type_per_article %>% 
@@ -153,6 +168,8 @@ grid.arrange(plot_primary, plot_derivative,
 )
 ``` 
 
+**Percentile bar plot style**
+
 ```{r plot_perc_bar}
 
 source_type_per_article %>%
@@ -161,8 +178,18 @@ source_type_per_article %>%
   coord_flip()
 
 ```
+
 ### It's all about speed.
 
+During exploration of data, we found that some of the titles where duplicated. This means that some articles were posted 'after' others in different sources. The assumption is that the article that posts first, is considered a primary source, while the article that posts second is then considered the derivative source. 
+
+Some of the articles have the same title because they are part of a group of posts, e.g. "voices - a blog about what is important to the people" where all the articles are in this same category but not necessary the same 'article'. Some of the articles are posted on the same date despite the same title, unfortunately, we are unable to tell them apart then. 
+
+Hence, we identify such duplicates with the following conditions: 
+
+* title repeated more than once 
+* more than 1 number of distinct sources with the same title
+* more than 1 number of distinct published dates with the same title 
 
 ```{r duplicated}
 article_titles_dup <- cleaned_text %>%
@@ -178,22 +205,23 @@ article_titles_dup <- cleaned_text %>%
 
 article_titles_dup
 ```
-```{r }
+
+From there we are able to visualize the number of articles which lagged 0,1 or >=2 days from the first article appearance. 
+
+```{r dup_aritcles_by_sources}
 dup_articles <- cleaned_text %>%
   filter(title %in% unique(article_titles_dup$title)) %>%
   arrange(desc(title), desc(source)) %>%
   left_join(article_titles_dup %>% select(title, min_date)) %>%
   drop_na(published_date, min_date) %>%
-  mutate(days_lagged = published_date - min_date)
-
-dup_articles
+  mutate(days_lagged = published_date - min_date) %>%
+  mutate(days_lagged = ifelse(days_lagged >=2, '>=2 days', paste(days_lagged, 'day'))) 
 
 dup_articles_by_sources <- dup_articles %>%
   group_by(source, days_lagged) %>%
   summarize(n = n()) %>%
   ungroup() %>% 
-  arrange(desc(days_lagged)) %>% 
-  mutate(days_lagged = ifelse(days_lagged >=2, '>=2 days', paste(days_lagged, 'day'))) 
+  arrange(desc(days_lagged)) 
 dup_articles_by_sources
 
 dup_articles_by_sources %>%
@@ -207,22 +235,111 @@ dup_articles_by_sources %>%
   facet_wrap(~days_lagged)
 ``` 
 
+Let's visualize it. 
 
-
-
-
-```{r, fig.height=10}
+```{r, fig.height=12}
 dup_articles %>%
-  mutate(title = fct_reorder(title, published_date)) %>%
-  ggplot(aes(x=published_date, y=title, colour=source)) +
-  geom_point() + 
-  theme(legend.position="none")
+  mutate(date_day = day(published_date), 
+         title = fct_reorder(title, date_day) ) %>%
+  ggplot(aes(x=date_day, y=title)) +
+  geom_line(size=2) 
 ```
-Lovely graph, but can't see the dots in between. 
 
-```{r, fig.height=10}
-dup_articles %>%
-  mutate(title = fct_reorder(title, published_date), 
-         date_day = day(published_date)) %>%
-  ggplot(aes(x=published_date, y=title, colour=source)) +
-  geom_point() 
+
+This is adds on to the number of primary articles that we can identify. We create new is_primary columns to track. 
+
+* is_primary1 : original is_primary column
+* is_primary2 : status derived from the duplicated article titles and their dates 
+* is_primary  : if is_primary2 = 'primary', then 'primary. else is_primary_1
+
+```{r add_primary}
+cleaned_text <- cleaned_text %>% 
+  left_join(dup_articles %>% select(article_id, days_lagged)) %>%
+  mutate(is_primary2 = ifelse( days_lagged == "0 day", "primary", "derivative"), 
+         is_primary1 = is_primary) %>%
+  replace_na(list(is_primary2 = 'unknown')) %>% 
+  mutate(is_primary = ifelse(is_primary2 == "primary", "primary", is_primary1))
+
+cleaned_text
+```
+
+```{r source_type_per_article2 }
+# Step 2
+source_type_per_article <- cleaned_text %>%
+  group_by(source, is_primary) %>%
+  summarize(n = n()) %>% 
+  ungroup() %>%
+  right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
+  arrange(desc(n))
+
+# Step 3 
+source_type_per_article_perc <- source_type_per_article %>% 
+  pivot_wider(names_from= is_primary, values_from=n) %>%
+  replace_na(list(derivative=0L, primary=0L)) %>%
+  mutate(primary_perc = primary/(derivative + primary), 
+         source = as.character(source)) %>%
+  select(source, primary_perc)
+
+# Step 4 
+source_type_per_article <- source_type_per_article %>%
+  left_join(source_type_per_article_perc) %>%
+  mutate(source = fct_reorder(source, primary_perc))
+```
+
+
+**Pyramid plot style**
+
+```{r plot_pyramid2, echo=FALSE}
+plot_derivative <- source_type_per_article %>% 
+  filter(is_primary == "derivative") %>%
+  ggplot(aes(x=source, y=n)) +
+  geom_bar(stat='identity', fill="#0072B2") +
+  scale_y_continuous('') + 
+  ylim(0,120)+
+  theme(legend.position = 'none',
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 11.5, hjust = 0.5),
+        plot.margin=unit(c(0.1,0.2,0.1,-.1),"cm"),
+        axis.ticks.y = element_blank(), 
+        axis.text.y = element_text(hjust = 0.5)) + #theme_bw()$axis.text.y,
+  ggtitle("Derivative") + 
+  coord_flip() 
+  
+plot_primary <- source_type_per_article %>% 
+  filter(is_primary == "primary") %>%
+  ggplot(aes(x=source, y=n)) +
+  geom_bar(stat='identity', fill="#D55E00") +
+  # ylim(0,120)+
+  scale_y_continuous(trans = 'reverse', limits=c(120,0))+ 
+  theme(legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(), 
+        plot.title = element_text(size = 11.5, hjust = 0.5),
+        plot.margin=unit(c(0.1,0,0.1,0.05),"cm")) + 
+  ggtitle("Primary") +
+  coord_flip()
+
+plot_sources <- source_type_per_article %>% 
+  filter(is_primary == "derivative") %>%
+  ggplot(aes(x=source, y=n)) +
+  geom_bar(stat='identity')+
+  geom_text(aes(y=0, label=source))+ 
+  coord_flip()
+
+grid.arrange(plot_primary, plot_derivative, 
+             widths=c(0.4,0.6),
+             ncol=2
+)
+``` 
+
+**Percentile bar plot style**
+
+```{r plot_perc_bar2, echo=FALSE}
+source_type_per_article %>%
+  ggplot(aes(fill=is_primary, y=n, x=source)) +
+  geom_bar(position="fill", stat="identity") +
+  coord_flip()
+
+```
+

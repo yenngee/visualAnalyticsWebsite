@@ -30,6 +30,7 @@ library(tidyverse)
 library(tidytext)
 library(stringr)
 library(gridExtra)
+library(lubridate)
 ```
 
 
@@ -39,19 +40,22 @@ We load the cleaned data directly below:
 
 
 ```r
-cleaned_text <- read_rds("data/news_article_raw.rds")
+cleaned_text <- read_rds("data/news_article_clean.rds")
+cleaned_text <- cleaned_text %>%
+  mutate(title = tolower(title))
 glimpse(cleaned_text)
 ```
 
 ```
 ## Rows: 845
-## Columns: 6
-## $ source     <chr> "All News Today", "All News Today", "All News Today", "All ~
-## $ article_id <chr> "All News Today_121", "All News Today_135", "All News Today~
-## $ text       <chr> "  Fifteen members of the Protectors of Kronos (POK) activi~
-## $ title      <chr> "POK PROTESTS END IN ARRESTS", "RALLY SCHEDULED IN SUPPORT ~
-## $ published  <chr> "2005/04/06", "2012/04/09", "1993/02/02", "Petrus Gerhard",~
-## $ location   <chr> "ELODIS, Kronos", "ABILA, Kronos", "ABILA, Kronos", "ELODIS~
+## Columns: 7
+## $ source         <chr> "All News Today", "All News Today", "All News Today", "~
+## $ article_id     <chr> "All News Today_121", "All News Today_135", "All News T~
+## $ text           <chr> "  Fifteen members of the Protectors of Kronos (POK) ac~
+## $ title          <chr> "pok protests end in arrests", "rally scheduled in supp~
+## $ location       <chr> "elodis, kronos", "abila, kronos", "abila, kronos", "el~
+## $ author         <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
+## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, NA, 1998-05-15, 20~
 ```
 
 ## Primary Sources VS Derivative sources
@@ -91,92 +95,97 @@ str_detect("more random text 6:30 AM hahaha", "[0-1]?[0-9]:[0-5]{1}[0-9]{1} [AP]
 ## [1] TRUE
 ```
 
+#### 1) Identifying Primary/Derivative if 'time' is in the article
+
+Let's apply this to get a definition of whether a particular article is primary or derivative. 
+
+
 ```r
 cleaned_text$is_primary <- str_detect(cleaned_text$text, "^[0-2][0-9][0-5][0-9]") | str_detect(cleaned_text$text, "[0-1]?[0-9]:[0-5]{1}[0-9]{1} [AP]M")
 cleaned_text$is_primary <- if_else(cleaned_text$is_primary, "primary", "derivative")
 ```
 
+#### 2) Visualize type of articles per source_type
+
+**Step 1**: Not all of the news article source has both primary and derivative sources. Hence, we first create the complete data frame with all of the cleaned 
+**Step 2**: We then create `source_type_per_article` which is dataframe that counts the number of articles of type primary or derivative for each newspaper source. 
+**Step 3**: Unfortunately, for our visualization to be pretty, we'll need to sort it. I want to sort it by the percentile of primary articles out of the total number of articles each news source has. So this steps create `source_type_per_article_perc`. 
+**Step 4**: we do a `left_join`, and `fct_order` by the primary_perc to get the final data frame. 
 
 
 ```r
+# Step 1 
 full_source_type_per_article <- expand_grid(source = unique(cleaned_text$source), 
                                              is_primary = c('primary', 'derivative')) 
-full_source_type_per_article
-```
 
-```
-## # A tibble: 58 x 2
-##    source           is_primary
-##    <chr>            <chr>     
-##  1 All News Today   primary   
-##  2 All News Today   derivative
-##  3 Athena Speaks    primary   
-##  4 Athena Speaks    derivative
-##  5 Central Bulletin primary   
-##  6 Central Bulletin derivative
-##  7 Centrum Sentinel primary   
-##  8 Centrum Sentinel derivative
-##  9 Daily Pegasus    primary   
-## 10 Daily Pegasus    derivative
-## # ... with 48 more rows
-```
-
-```r
+# Step 2
 source_type_per_article <- cleaned_text %>%
   group_by(source, is_primary) %>%
   summarize(n = n()) %>% 
   ungroup() %>%
-  right_join(full_source_type_per_article, by = c('source', 'is_primary'))# %>% 
-  # pivot_wider(names_from= is_primary, values_from=n) %>%
-  # replace_na(list(derivative=0L, primary=0L))
+  right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
+  arrange(desc(n))
+
+# Step 3 
+source_type_per_article_perc <- source_type_per_article %>% 
+  pivot_wider(names_from= is_primary, values_from=n) %>%
+  replace_na(list(derivative=0L, primary=0L)) %>%
+  mutate(primary_perc = primary/(derivative + primary), 
+         source = as.character(source)) %>%
+  select(source, primary_perc)
+
+# Step 4 
+source_type_per_article <- source_type_per_article %>%
+  left_join(source_type_per_article_perc) %>%
+  mutate(source = fct_reorder(source, primary_perc))
+
 source_type_per_article
 ```
 
 ```
-## # A tibble: 58 x 3
-##    source                is_primary     n
-##    <chr>                 <chr>      <int>
-##  1 All News Today        derivative    18
-##  2 Athena Speaks         derivative    24
-##  3 Athena Speaks         primary        1
-##  4 Central Bulletin      derivative    21
-##  5 Centrum Sentinel      primary       36
-##  6 Daily Pegasus         derivative    26
-##  7 Everyday News         derivative    15
-##  8 Homeland Illumination derivative    64
-##  9 International News    derivative    20
-## 10 International Times   derivative    14
+## # A tibble: 58 x 4
+##    source                is_primary     n primary_perc
+##    <fct>                 <chr>      <int>        <dbl>
+##  1 News Online Today     derivative   111        0    
+##  2 Homeland Illumination primary       37        0.578
+##  3 Centrum Sentinel      primary       36        1    
+##  4 Kronos Star           primary       34        0.548
+##  5 Tethys News           primary       29        0.829
+##  6 Kronos Star           derivative    28        0.548
+##  7 The Guide             derivative    28        0    
+##  8 The Truth             derivative    28        0    
+##  9 Worldwise             derivative    28        0    
+## 10 Homeland Illumination derivative    27        0.578
 ## # ... with 48 more rows
 ```
 
+**Pyramid plot style**
+
+
 ```r
-# source_type_per_article %>%
-#   ggplot(aes(x = source, y = n, fill = is_primary)) +
-#   geom_bar(stat='identity') + 
-#   coord_flip()
-
-
 plot_derivative <- source_type_per_article %>% 
   filter(is_primary == "derivative") %>%
   ggplot(aes(x=source, y=n)) +
-  geom_bar(stat='identity', fill='blue') +
+  geom_bar(stat='identity', fill="#0072B2") +
   scale_y_continuous('') + 
+  ylim(0,120)+
   theme(legend.position = 'none',
         axis.title.y = element_blank(),
         plot.title = element_text(size = 11.5, hjust = 0.5),
         plot.margin=unit(c(0.1,0.2,0.1,-.1),"cm"),
         axis.ticks.y = element_blank(), 
-        axis.text.y = theme_bw()$axis.text.y,
-        axis.text.x = element_text(hjust = 0.5))+ 
+        axis.text.y = element_text(hjust = 0.5)) + #theme_bw()$axis.text.y,
   ggtitle("Derivative") + 
   coord_flip() 
   
 plot_primary <- source_type_per_article %>% 
   filter(is_primary == "primary") %>%
   ggplot(aes(x=source, y=n)) +
-  geom_bar(stat='identity', fill='red') +
-  scale_y_continuous(trans = 'reverse')+ 
+  geom_bar(stat='identity', fill="#D55E00") +
+  # ylim(0,120)+
+  scale_y_continuous(trans = 'reverse', limits=c(120,0))+ 
   theme(legend.position = 'none',
+        axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(), 
         plot.title = element_text(size = 11.5, hjust = 0.5),
@@ -197,6 +206,196 @@ grid.arrange(plot_primary, plot_derivative,
 )
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/live_updates_viz-1.png" width="672" />
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_pyramid-1.png" width="672" />
+
+**Percentile bar plot style**
+
+
+```r
+source_type_per_article %>%
+  ggplot(aes(fill=is_primary, y=n, x=source)) +
+  geom_bar(position="fill", stat="identity") +
+  coord_flip()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_perc_bar-1.png" width="672" />
+
 ### It's all about speed.
+
+During exploration of data, we found that some of the titles where duplicated. This means that some articles were posted 'after' others in different sources. The assumption is that the article that posts first, is considered a primary source, while the article that posts second is then considered the derivative source. 
+
+Some of the articles have the same title because they are part of a group of posts, e.g. "voices - a blog about what is important to the people" where all the articles are in this same category but not necessary the same 'article'. Some of the articles are posted on the same date despite the same title, unfortunately, we are unable to tell them apart then. 
+
+Hence, we identify such duplicates with the following conditions: 
+
+* title repeated more than once 
+* more than 1 number of distinct sources with the same title
+* more than 1 number of distinct published dates with the same title 
+
+
+```r
+article_titles_dup <- cleaned_text %>%
+  group_by(title) %>%
+  add_count(source) %>% 
+  summarize(n_distinct_source = n_distinct(source), 
+            n_distinct_date = n_distinct(published_date), 
+            min_date = min(published_date),
+            n = n()) %>%
+  ungroup() %>%
+  filter(n>1 & n_distinct_source>1 & n_distinct_date > 1) %>%
+  arrange(desc(n))
+
+article_titles_dup
+```
+
+```
+## # A tibble: 81 x 5
+##    title                       n_distinct_sour~ n_distinct_date min_date       n
+##    <chr>                                  <int>           <int> <date>     <int>
+##  1 profile:  elian karel                      6               2 2009-06-22     6
+##  2 anniversary of protests                    5               3 2010-06-13     5
+##  3 possible contamination in ~                5               3 1997-04-23     5
+##  4 a look back at a life cut ~                3               2 2011-06-20     4
+##  5 elodis public health fact ~                3               3 1998-05-15     4
+##  6 gastech                                    4               2 2013-02-22     4
+##  7 gastech adopts new logo                    4               3 2009-05-15     4
+##  8 pok leader karel arrested                  3               2 2009-03-12     4
+##  9 pok remembers martyred lea~                4               2 2012-06-20     4
+## 10 traffic accident near elod~                4               2 2007-04-10     4
+## # ... with 71 more rows
+```
+
+From there we are able to visualize the number of articles which lagged 0,1 or >=2 days from the first article appearance. 
+
+
+```r
+dup_articles <- cleaned_text %>%
+  filter(title %in% unique(article_titles_dup$title)) %>%
+  arrange(desc(title), desc(source)) %>%
+  left_join(article_titles_dup %>% select(title, min_date)) %>%
+  drop_na(published_date, min_date) %>%
+  mutate(days_lagged = published_date - min_date) %>%
+  mutate(days_lagged = ifelse(days_lagged >=2, '>=2 days', paste(days_lagged, 'day'))) 
+
+dup_articles_by_sources <- dup_articles %>%
+  group_by(source, days_lagged) %>%
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  arrange(desc(days_lagged)) 
+dup_articles_by_sources
+```
+
+```
+## # A tibble: 36 x 3
+##    source             days_lagged     n
+##    <chr>              <chr>       <int>
+##  1 All News Today     1 day           9
+##  2 Athena Speaks      1 day           2
+##  3 Central Bulletin   1 day          13
+##  4 Everyday News      1 day           1
+##  5 International News 1 day          10
+##  6 News Online Today  1 day          61
+##  7 The Continent      1 day           1
+##  8 The Explainer      1 day           2
+##  9 The General Post   1 day           1
+## 10 The Orb            1 day           1
+## # ... with 26 more rows
+```
+
+```r
+dup_articles_by_sources %>%
+  mutate(days_lagged = factor(days_lagged, levels = c('0 day', '1 day', '>=2 days')), 
+         source = fct_reorder(source,n)) %>%
+  # pivot_wider(names_from = days_lagged, values_from = n) %>%
+  # replace_na(list('>=_2_days' = 0L, '0_day' = 0L, '1_day' = 0L)) %>%
+  ggplot(aes(x=source, y = n, fill = days_lagged)) +
+  geom_bar(stat = 'identity') + 
+  coord_flip() + 
+  facet_wrap(~days_lagged)
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/dup_aritcles_by_sources-1.png" width="672" />
+
+Let's visualize it. 
+
+
+```r
+dup_articles %>%
+  mutate(date_day = day(published_date), 
+         title = fct_reorder(title, date_day) ) %>%
+  ggplot(aes(x=date_day, y=title)) +
+  geom_line(size=2) 
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-1-1.png" width="672" />
+
+
+This is adds on to the number of primary articles that we can identify. We create new is_primary columns to track. 
+
+* is_primary1 : original is_primary column
+* is_primary2 : status derived from the duplicated article titles and their dates 
+* is_primary  : if is_primary2 = 'primary', then 'primary. else is_primary_1
+
+
+```r
+cleaned_text <- cleaned_text %>% 
+  left_join(dup_articles %>% select(article_id, days_lagged)) %>%
+  mutate(is_primary2 = ifelse( days_lagged == "0 day", "primary", "derivative"), 
+         is_primary1 = is_primary) %>%
+  replace_na(list(is_primary2 = 'unknown')) %>% 
+  mutate(is_primary = ifelse(is_primary2 == "primary", "primary", is_primary1))
+
+cleaned_text
+```
+
+```
+## # A tibble: 845 x 11
+##    source  article_id  text    title   location author published_date is_primary
+##    <chr>   <chr>       <chr>   <chr>   <chr>    <chr>  <date>         <chr>     
+##  1 All Ne~ All News T~ "  Fif~ pok pr~ elodis,~ <NA>   2005-04-06     derivative
+##  2 All Ne~ All News T~ "  Sil~ rally ~ abila, ~ <NA>   2012-04-09     primary   
+##  3 All Ne~ All News T~ "  In ~ lack o~ abila, ~ <NA>   1993-02-02     primary   
+##  4 All Ne~ All News T~ " NOTE~ elodis~ elodis,~ <NA>   NA             derivative
+##  5 All Ne~ All News T~ "NOTE:~ elodis~ <NA>     <NA>   1998-05-15     derivative
+##  6 All Ne~ All News T~ "  The~ elodis~ elodis,~ <NA>   2004-05-29     primary   
+##  7 All Ne~ All News T~ "  ABI~ who br~ abila, ~ <NA>   2013-06-21     derivative
+##  8 All Ne~ All News T~ "  A m~ tax me~ abila, ~ <NA>   2001-03-22     derivative
+##  9 All Ne~ All News T~ "  Rep~ pok re~ abila, ~ <NA>   1998-11-15     derivative
+## 10 All Ne~ All News T~ "  Eli~ elian ~ abila, ~ <NA>   2009-06-20     derivative
+## # ... with 835 more rows, and 3 more variables: days_lagged <chr>,
+## #   is_primary2 <chr>, is_primary1 <chr>
+```
+
+
+```r
+# Step 2
+source_type_per_article <- cleaned_text %>%
+  group_by(source, is_primary) %>%
+  summarize(n = n()) %>% 
+  ungroup() %>%
+  right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
+  arrange(desc(n))
+
+# Step 3 
+source_type_per_article_perc <- source_type_per_article %>% 
+  pivot_wider(names_from= is_primary, values_from=n) %>%
+  replace_na(list(derivative=0L, primary=0L)) %>%
+  mutate(primary_perc = primary/(derivative + primary), 
+         source = as.character(source)) %>%
+  select(source, primary_perc)
+
+# Step 4 
+source_type_per_article <- source_type_per_article %>%
+  left_join(source_type_per_article_perc) %>%
+  mutate(source = fct_reorder(source, primary_perc))
+```
+
+
+**Pyramid plot style**
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_pyramid2-1.png" width="672" />
+
+**Percentile bar plot style**
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_perc_bar2-1.png" width="672" />
 
