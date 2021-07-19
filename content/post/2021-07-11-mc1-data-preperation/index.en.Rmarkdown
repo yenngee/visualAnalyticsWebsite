@@ -210,10 +210,14 @@ words_by_articles <- token_words %>%
   ungroup()
 
 words_by_articles %>%
+  filter(word == 'pok') %>%
+  arrange(source)
+
+words_by_articles %>%
   filter(n>20) %>%
-  ggplot(aes(label=word, size = n)) + 
-  geom_text_wordcloud() + 
-  theme_minimal() + 
+  ggplot(aes(label=word, size = n)) +
+  geom_text_wordcloud() +
+  theme_minimal() +
   facet_wrap(~source)
 ```
 

@@ -6,7 +6,7 @@ lastmod: '2021-07-15'
 slug: []
 cover: "/img/data_preperation.jpg"
 categories: []
-tags: ['MITB', 'Text Analytics', "Kronos Kidnapping"]
+tags: ['MITB', 'Text Analytics', "MC1"]
 output:
   blogdown::html_page: 
     toc: true
@@ -242,10 +242,33 @@ words_by_articles <- token_words %>%
   ungroup()
 
 words_by_articles %>%
+  filter(word == 'pok') %>%
+  arrange(source)
+```
+
+```
+## # A tibble: 28 x 3
+##    source                word      n
+##    <chr>                 <chr> <int>
+##  1 All News Today        pok      13
+##  2 Athena Speaks         pok      29
+##  3 Central Bulletin      pok      20
+##  4 Centrum Sentinel      pok       1
+##  5 Daily Pegasus         pok      26
+##  6 Everyday News         pok      18
+##  7 Homeland Illumination pok      30
+##  8 International News    pok      27
+##  9 International Times   pok      18
+## 10 Kronos Star           pok      41
+## # ... with 18 more rows
+```
+
+```r
+words_by_articles %>%
   filter(n>20) %>%
-  ggplot(aes(label=word, size = n)) + 
-  geom_text_wordcloud() + 
-  theme_minimal() + 
+  ggplot(aes(label=word, size = n)) +
+  geom_text_wordcloud() +
+  theme_minimal() +
   facet_wrap(~source)
 ```
 

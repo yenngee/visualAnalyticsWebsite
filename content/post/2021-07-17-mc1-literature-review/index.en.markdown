@@ -115,4 +115,9 @@ knitr::include_graphics("image/tianjingao_topics_sentiment_over_time.JPG")
 
 ![](image/tianjingao_topics_sentiment_over_time.JPG)<!-- -->
 
+The second and third area chart is quite interesting as they show the amount of positivity/negativity and the topics trend over the year. 
+
+However, there are certain things that could be improved on, or have doubts about: 
+* how did he determine the value of positivity and negativity in the second chart? 
+* why were those words chosen? 
 

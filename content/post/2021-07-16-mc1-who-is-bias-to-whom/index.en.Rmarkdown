@@ -35,6 +35,10 @@ library(tidytext)
 library(stringr)
 library(gridExtra)
 library(lubridate)
+library(wordcloud)
+library(tidygraph)
+library(igraph)      
+library(ggraph)
 ```
 
 ### Load Data 
@@ -69,6 +73,7 @@ token_words <- cleaned_text %>%
 ```{r token_words}
 glimpse(token_words)
 ```
+
 ## Analysis 
 ### Frequency 
 We want to pick out certain words and see for each articles mentions it the highest. 
@@ -87,6 +92,7 @@ token_words %>%
 We see Kronos Star mention pok the most, while Centrum Sentinel mentions the least. 
 
 Let's see similar graph but including other words. 
+
 
 ```{r freq_of_org}
 freq_of_org <- token_words %>%
@@ -124,20 +130,23 @@ pok_words <- token_words %>%
   filter(word %in% c("pok"))
 
 pok_count_words <- token_words %>% 
-  filter(article_id %in% unique(pok_words$article_id)) %>% 
+  filter(article_id %in% unique(pok_words$article_id) & !word == "pok") %>% 
   count(word, sort=TRUE) %>%
-  arrange(desc(n))
+  mutate(word = fct_reorder(word, n))
 
-pok_count_words %>% 
-  gg_plot()
+pok_count_words %>%
+  top_n(15) %>%
+  ggplot(aes(x= word, y=n)) + 
+  geom_col() +
+  coord_flip()
 
-wordcloud(words = count_words$word, 
-          freq = count_words$n, 
+wordcloud(words = pok_count_words$word, 
+          freq = pok_count_words$n, 
           max.words = 100)
 ```
-```{r words_associated_with_pok}
+```{r words_associated_with_org}
 pok_words <- token_words %>%
-  filter(word %in% c("pok"))
+  filter(word %in% c("pok", 'government', 'gastech'))
 
 pok_count_words <- token_words %>% 
   filter(article_id %in% unique(pok_words$article_id)) %>% 
@@ -147,5 +156,74 @@ pok_count_words <- token_words %>%
 pok_count_words
 ```
 
-### sentinent 
+### sentinent analysis 
 
+```{r add_sentiment}
+token_sentiments <- token_words %>% 
+  left_join(get_sentiments("bing"))
+
+sentiment_by_grp <- token_sentiments %>%
+  filter(sentiment %in% c("positive", "negative") & article_id %in% unique(pok_words$article_id)) %>%
+  count(source, sentiment) %>%
+  spread(sentiment,n) %>% 
+  mutate(overall_sentiment = positive-negative, 
+         source = fct_reorder(source, overall_sentiment))
+
+sentiment_by_grp %>% 
+  ggplot(aes(x = source, y = overall_sentiment, fill = as.factor(source))) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Overall Sentiment by Article with articles that contains POK",
+    subtitle = "Words in articles",
+    x = "Article",
+    y = "Overall Sentiment"
+    )
+
+``` 
+
+### Network Analysis 
+Let's try this. 
+The source nodes are news article source and the target nodes are the words. 
+
+```{r nodes_edges_data}
+# creating nodes df
+source_tibble <- as_tibble(unique(token_words$source), column_name = "label") %>% 
+  mutate(type = 'news article')%>% 
+  rename('label' = 'value')
+word_tibble <- as_tibble(unique(token_words$word)) %>% 
+  mutate(type = 'word') %>% 
+  rename('label' = 'value')
+article_nodes <- source_tibble %>% 
+  bind_rows(word_tibble) %>% 
+  rowid_to_column("id")
+
+# create edges df
+article_edges <- token_sentiments %>%
+  rename(target_label = word, source_label = source) %>%
+  left_join(article_nodes %>% select(label, id), by = c("source_label" = "label")) %>% 
+  rename(source = id) %>%
+  left_join(article_nodes %>% select(label, id), by = c("target_label" = "label")) %>% 
+  rename(target = id) 
+
+article_edges_agg <- article_edges %>% 
+  group_by(source, target, source_label, target_label) %>%
+  summarize(weight = n()) %>%
+  ungroup() %>% 
+  filter(weight > 20)
+
+article_graph <- tbl_graph(nodes = article_nodes, 
+                          edges = article_edges_agg, 
+                          directed = TRUE)
+
+article_edges_agg %>%
+  arrange(desc(weight))
+```
+
+
+```{r network}
+ggraph(article_graph) + 
+  geom_edge_link() +
+  geom_node_point()
+
+```
