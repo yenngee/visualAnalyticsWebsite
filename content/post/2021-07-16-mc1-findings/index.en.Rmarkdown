@@ -2,11 +2,11 @@
 title: 'MC1: Findings and Discoveries'
 author: "Ng Yen Ngee"
 date: '2021-07-16'
-lastmod: '2021-07-16'
+lastmod: '2021-07-20'
 slug: []
 cover: "/img/data_discovery.png"
 categories: []
-tags: ['MITB', 'Text Analytics', "MC1"]
+tags: ['MITB', "MC1", 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
@@ -28,11 +28,10 @@ library(tidytext)
 
 ## 1a) Primary Vs Derivative Sources 
 This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources?
-The combined section of 1a) and 1b) will be limited to 8 images and 300 words. The step by step thought process and description of how to obtain 
-
+The combined section of 1a) and 1b) will be limited to 8 images and 300 words. The step by step thought process and description of how to obtain.
 
 Primary Sources is "first-hand" information. In terms of data, we've defined an article as the following: 
-- 
+ 
 
 
 

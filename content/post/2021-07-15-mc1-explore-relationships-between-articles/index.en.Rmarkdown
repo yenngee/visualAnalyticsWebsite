@@ -6,7 +6,7 @@ lastmod: '2021-07-15'
 slug: []
 cover: "/img/explore_relationships.png"
 categories: []
-tags: ['MITB', 'Text Analytics', "MC1"]
+tags: ['MITB', "MC1", 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
@@ -21,10 +21,14 @@ knitr::opts_chunk$set(fig.retina = 3,
 ```
 
 # Introduction 
-In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](). 
+In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://vast-challenge.github.io/2021/MC1.html). 
+
+The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/).
+
 
 ## Preperation 
-## Import packages 
+
+### Import packages 
 
 ```{r load package}
 library(tidyverse)
@@ -34,15 +38,40 @@ library(igraph)
 library(widyr)
 ```
 
-## Load Data 
-```{r tokens}
-token_words <- read_rds("data/news_article_token_words.rds")
-token_bigrams <- read_rds("data/news_article_bigrams.rds")
+### Load Data 
+The data has been previously loaded, cleaned and transformed into a neat tibble dataframe [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/). 
+We load the cleaned data directly below: 
 
+```{r load_clean_text}
+cleaned_text <- read_rds("data/news_article_clean.rds")
+cleaned_text <- cleaned_text %>%
+  mutate(title = tolower(title))
+glimpse(cleaned_text)
+```
+
+### Tokenize Data
+The process of the tokenizing the data is written in detail [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/#tokenising). This is how the `token_words` look like. 
+
+```{r token_stopwords, echo=FALSE}
+custom_stop_words <- tribble(
+  ~word, ~lexicon,
+  "kronos", "CUSTOM",
+  "abila",  "CUSTOM"
+)
+stop_words2 <- stop_words %>%
+  bind_rows(custom_stop_words)
+
+token_words <- cleaned_text %>% 
+  unnest_tokens(word, text) %>%
+  filter(str_detect(word, "[a-z']$"), # only keep words. exclude all numeric. 
+         !word %in% stop_words2$word) # to remove stop words 
+```
+
+```{r token_words}
+glimpse(token_words)
 ```
 
 ## Explore relationships 
-
 ### "Correlations" between articles
 we want to know which newsgroup is more similar based on the words they use. 
 
@@ -73,31 +102,31 @@ articles_cors %>%
 We look at words as consecutive terms. 
 
 ```{r bigram_viz}
-bigram_counts <- bigrams_filtered  %>%
-  count(word, sort=TRUE) %>%
-  filter(n>3) 
-bigram_counts
-
-bigram_counts %>%
-  graph_from_data_frame() %>%
-  ggraph(layout='fr') + 
-  geom_edge_link() +
-  geom_node_point() +
-  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
-  theme_void()
-
-a <- grid::arrow(type="closed", 
-                 length=unit(.15, "inches"))
-bigram_counts %>%
-  graph_from_data_frame() %>%
-  ggraph(layout='fr') + 
-  geom_edge_link( #aes(edge_alpha = n), 
-                 show.legend = FALSE, 
-                 arrow = a, 
-                 end_cap = circle(.07, 'inches')
-                 ) +
-  geom_node_point(color = "lightblue", 
-                  size=5) +
-  geom_node_text(aes(label=name), vjust=1, hjust=1) + 
-  theme_void()
+# bigram_counts <- bigrams_filtered  %>%
+#   count(word, sort=TRUE) %>%
+#   filter(n>3) 
+# bigram_counts
+# 
+# bigram_counts %>%
+#   graph_from_data_frame() %>%
+#   ggraph(layout='fr') +
+#   geom_edge_link() +
+#   geom_node_point() +
+#   geom_node_text(aes(label=name), vjust=1, hjust=1) +
+#   theme_void()
+# 
+# a <- grid::arrow(type="closed",
+#                  length=unit(.15, "inches"))
+# bigram_counts %>%
+#   graph_from_data_frame() %>%
+#   ggraph(layout='fr') +
+#   geom_edge_link( #aes(edge_alpha = n),
+#                  show.legend = FALSE,
+#                  arrow = a,
+#                  end_cap = circle(.07, 'inches')
+#                  ) +
+#   geom_node_point(color = "lightblue",
+#                   size=5) +
+#   geom_node_text(aes(label=name), vjust=1, hjust=1) +
+#   theme_void()
 ```

@@ -6,7 +6,7 @@ lastmod: '2021-07-15'
 slug: []
 cover: "/img/p_vs_s.png"
 categories: []
-tags: ['MITB', 'Text Analytics', "Kronos Kidnapping"]
+tags: ['MITB', "MC1", 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
@@ -51,11 +51,11 @@ glimpse(cleaned_text)
 ## Columns: 7
 ## $ source         <chr> "All News Today", "All News Today", "All News Today", "~
 ## $ article_id     <chr> "All News Today_121", "All News Today_135", "All News T~
-## $ text           <chr> "  Fifteen members of the Protectors of Kronos (POK) ac~
+## $ text           <chr> "  fifteen members of the protectors of kronos (pok) ac~
 ## $ title          <chr> "pok protests end in arrests", "rally scheduled in supp~
 ## $ location       <chr> "elodis, kronos", "abila, kronos", "abila, kronos", "el~
 ## $ author         <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,~
-## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, NA, 1998-05-15, 20~
+## $ published_date <date> 2005-04-06, 2012-04-09, 1993-02-02, 1998-03-20, 1998-0~
 ```
 
 ## Primary Sources VS Derivative sources
@@ -147,15 +147,15 @@ source_type_per_article
 ##    source                is_primary     n primary_perc
 ##    <fct>                 <chr>      <int>        <dbl>
 ##  1 News Online Today     derivative   111        0    
-##  2 Homeland Illumination primary       37        0.578
-##  3 Centrum Sentinel      primary       36        1    
-##  4 Kronos Star           primary       34        0.548
-##  5 Tethys News           primary       29        0.829
-##  6 Kronos Star           derivative    28        0.548
-##  7 The Guide             derivative    28        0    
-##  8 The Truth             derivative    28        0    
-##  9 Worldwise             derivative    28        0    
-## 10 Homeland Illumination derivative    27        0.578
+##  2 Kronos Star           derivative    62        0    
+##  3 Homeland Illumination primary       37        0.578
+##  4 Centrum Sentinel      primary       36        1    
+##  5 Tethys News           derivative    35        0    
+##  6 The Guide             derivative    28        0    
+##  7 The Truth             derivative    28        0    
+##  8 Worldwise             derivative    28        0    
+##  9 Homeland Illumination derivative    27        0.578
+## 10 The Abila Post        derivative    27        0.5  
 ## # ... with 48 more rows
 ```
 
@@ -248,7 +248,7 @@ article_titles_dup
 ```
 
 ```
-## # A tibble: 81 x 5
+## # A tibble: 79 x 5
 ##    title                       n_distinct_sour~ n_distinct_date min_date       n
 ##    <chr>                                  <int>           <int> <date>     <int>
 ##  1 profile:  elian karel                      6               2 2009-06-22     6
@@ -261,7 +261,7 @@ article_titles_dup
 ##  8 pok leader karel arrested                  3               2 2009-03-12     4
 ##  9 pok remembers martyred lea~                4               2 2012-06-20     4
 ## 10 traffic accident near elod~                4               2 2007-04-10     4
-## # ... with 71 more rows
+## # ... with 69 more rows
 ```
 
 From there we are able to visualize the number of articles which lagged 0,1 or >=2 days from the first article appearance. 
@@ -288,12 +288,12 @@ dup_articles_by_sources
 ## # A tibble: 36 x 3
 ##    source             days_lagged     n
 ##    <chr>              <chr>       <int>
-##  1 All News Today     1 day           9
+##  1 All News Today     1 day          10
 ##  2 Athena Speaks      1 day           2
 ##  3 Central Bulletin   1 day          13
 ##  4 Everyday News      1 day           1
 ##  5 International News 1 day          10
-##  6 News Online Today  1 day          61
+##  6 News Online Today  1 day          63
 ##  7 The Continent      1 day           1
 ##  8 The Explainer      1 day           2
 ##  9 The General Post   1 day           1
@@ -351,16 +351,16 @@ cleaned_text
 ## # A tibble: 845 x 11
 ##    source  article_id  text    title   location author published_date is_primary
 ##    <chr>   <chr>       <chr>   <chr>   <chr>    <chr>  <date>         <chr>     
-##  1 All Ne~ All News T~ "  Fif~ pok pr~ elodis,~ <NA>   2005-04-06     derivative
-##  2 All Ne~ All News T~ "  Sil~ rally ~ abila, ~ <NA>   2012-04-09     primary   
-##  3 All Ne~ All News T~ "  In ~ lack o~ abila, ~ <NA>   1993-02-02     primary   
-##  4 All Ne~ All News T~ " NOTE~ elodis~ elodis,~ <NA>   NA             derivative
-##  5 All Ne~ All News T~ "NOTE:~ elodis~ <NA>     <NA>   1998-05-15     derivative
-##  6 All Ne~ All News T~ "  The~ elodis~ elodis,~ <NA>   2004-05-29     primary   
-##  7 All Ne~ All News T~ "  ABI~ who br~ abila, ~ <NA>   2013-06-21     derivative
-##  8 All Ne~ All News T~ "  A m~ tax me~ abila, ~ <NA>   2001-03-22     derivative
-##  9 All Ne~ All News T~ "  Rep~ pok re~ abila, ~ <NA>   1998-11-15     derivative
-## 10 All Ne~ All News T~ "  Eli~ elian ~ abila, ~ <NA>   2009-06-20     derivative
+##  1 All Ne~ All News T~ "  fif~ pok pr~ elodis,~ <NA>   2005-04-06     derivative
+##  2 All Ne~ All News T~ "  sil~ rally ~ abila, ~ <NA>   2012-04-09     primary   
+##  3 All Ne~ All News T~ "  in ~ lack o~ abila, ~ <NA>   1993-02-02     primary   
+##  4 All Ne~ All News T~ " note~ elodis~ elodis,~ <NA>   1998-03-20     derivative
+##  5 All Ne~ All News T~ "note:~ elodis~ <NA>     <NA>   1998-05-15     derivative
+##  6 All Ne~ All News T~ "  the~ elodis~ elodis,~ <NA>   2004-05-29     primary   
+##  7 All Ne~ All News T~ "  abi~ who br~ abila, ~ <NA>   2013-06-21     derivative
+##  8 All Ne~ All News T~ "  a m~ tax me~ abila, ~ <NA>   2001-03-22     derivative
+##  9 All Ne~ All News T~ "  rep~ pok re~ abila, ~ <NA>   1998-11-15     derivative
+## 10 All Ne~ All News T~ "  eli~ elian ~ abila, ~ <NA>   2009-06-20     derivative
 ## # ... with 835 more rows, and 3 more variables: days_lagged <chr>,
 ## #   is_primary2 <chr>, is_primary1 <chr>
 ```

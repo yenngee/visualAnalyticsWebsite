@@ -2,23 +2,57 @@
 title: 'MC1: Findings and Discoveries'
 author: "Ng Yen Ngee"
 date: '2021-07-16'
-lastmod: '2021-07-16'
+lastmod: '2021-07-20'
 slug: []
 cover: "/img/data_discovery.png"
 categories: []
-tags: ['MITB', 'Text Analytics', "Kronos Kidnapping"]
+tags: ['MITB', "MC1", 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
 ---
 
 # Introduction 
-In this post, I will be running through the findings and analysis of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). 
+In this post, I will be running through the findings and analysis of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). This will be my official answer to my class [assignment](https://isss608.netlify.app/assignment.html). 
 
+## Literature Review 
+
+
+## Data Preperation
+Data Preparation has been completed in another post [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/). The data preparation has included a step by step description of understanding the data and transforming unstructured text such as the news articles into a structured dataframe. For this portion of the post, I will be starting from a cleaned data source. 
+
+
+```r
+library(tidyverse)
+```
+
+```
+## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
+```
+
+```
+## v ggplot2 3.3.5     v purrr   0.3.4
+## v tibble  3.1.2     v dplyr   1.0.7
+## v tidyr   1.1.3     v stringr 1.4.0
+## v readr   1.4.0     v forcats 0.5.1
+```
+
+```
+## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+```
+
+```r
+library(tidytext)
+```
 
 ## 1a) Primary Vs Derivative Sources 
 This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources?
-The combined section of 1a) and 1b) will be limited to  8 images and 300 words.
+The combined section of 1a) and 1b) will be limited to 8 images and 300 words. The step by step thought process and description of how to obtain.
+
+Primary Sources is "first-hand" information. In terms of data, we've defined an article as the following: 
+ 
 
 
 
@@ -26,7 +60,8 @@ The combined section of 1a) and 1b) will be limited to  8 images and 300 words.
 This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?
 
 
-## 2) Who's bias? 
+
+## 2) Who is bias? 
 This section will answer part 2 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. 
 This section will be limited to 6 images and 500 words.
 
