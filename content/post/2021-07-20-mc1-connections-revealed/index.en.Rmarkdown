@@ -1,0 +1,97 @@
+---
+title: 'MC1: Connections Revealed'
+author: 'Ng Yen Ngee'
+date: '2021-07-20'
+lastmod: '2021-07-20'
+slug: []
+cover: "/img/connections.jpg"
+categories: []
+tags: ['MITB', 'Text Analytics', "MC1"]
+output:
+  blogdown::html_page: 
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=TRUE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+# Introduction 
+In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/). 
+
+Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives.
+
+## Preperation
+### Import packages 
+
+```{r load package}
+library(tidyverse)
+library(tidygraph)   # for tbl_graph
+library(igraph)      # network viz
+library(ggraph)      # network viz
+library(visNetwork)  # support interactivity
+```
+
+### Load Data 
+The data has been previously loaded, cleaned and transformed into a neat tibble dataframe [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/). 
+We load the cleaned data directly below: 
+
+```{r load_data}
+
+# Nodes 
+gastech_employees <- read_rds("data/gastech_employees.rds") %>% 
+  rename(department = CurrentEmploymentType, 
+         title = CurrentEmploymentTitle, 
+         citizenship = CitizenshipCountry) %>% 
+  select(id, label, department, title, citizenship)
+gastech_employees 
+
+# Edges 
+gastech_emails <- read_rds("data/gastech_emails.rds")
+gastech_emails
+
+gastech_edges <- gastech_emails %>% 
+  group_by(source, target) %>% 
+  summarize(weight=n()) %>%
+  filter(weight>1) %>%
+  ungroup() %>% 
+  mutate(from = source, to = target)
+
+gastech_edges
+
+gastech_graph <- tbl_graph(nodes = gastech_employees, 
+                           edges = gastech_edges, 
+                           directed = TRUE)
+gastech_graph
+```
+
+## Analyze Connections 
+
+### Let's visualize it 
+```{r employees_emails}
+g <- ggraph(gastech_graph, layout = 'nicely') + 
+  geom_edge_link() +
+  geom_node_point(aes(colour = department))
+
+g + theme_graph()
+```
+```{r employees_emails_interaction}
+# visNetwork(gastech_employees, gastech_edges, width = "100%") %>%
+#   visEdges(smooth = FALSE) %>%
+#   visOptions(selectedBy = "department")
+
+```
+
+### Let's pick out the subjects 
+```{r email_headers}
+length(unique(gastech_emails$Subject))
+
+gastech_emails %>%
+  group_by(Subject, Date) %>%
+  summarize(n())
+
+```
