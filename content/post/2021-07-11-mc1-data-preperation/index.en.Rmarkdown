@@ -36,6 +36,7 @@ The data preparation for the news articles will be done by 2 parts.
 
 ```{r load package}
 library(tidyverse)
+library(readxl)
 library(tidytext)
 library(lubridate)
 library(naniar)
@@ -248,3 +249,52 @@ wordcloud(words = count_words$word,
           max.words = 50)
 
 ```
+
+## email 
+
+* Load GASTech Employees. 
+* Cleaned up the dates 
+* Created id, label from `EmailAddress`such that it can also be used as nodes in network analysis 
+
+```{r gastech_employees}
+gastech_employee <- read_excel('data/EmployeeRecords.xlsx', sheet = "Employee Records")
+gastech_employee <- gastech_employee %>%
+  mutate(label = str_replace(str_extract(EmailAddress, "[^@]+"), '[.]', ' '), 
+         Birthdate = as.Date(BirthDate, format="%Y-%m-%d"),
+         PassportIssueDate = as.Date(PassportIssueDate, format="%Y-%m-%d") ) %>%
+  arrange(label)%>% 
+  rowid_to_column("id")
+
+write_rds(gastech_employee, "data/gastech_employees.rds") 
+
+gastech_employee
+```
+
+* Load their emails headers 
+* cleaned the dates
+* added source and target using id from the `gastech_employee` dataframe
+
+
+```{r email}
+raw_email_df <- read_csv('data/email headers.csv')
+# raw_email_df
+
+email_df <- raw_email_df %>% 
+  separate_rows("To", sep=", ") %>%
+  filter(From != To) %>% 
+  mutate(From = str_replace(str_extract(From, "[^@]+"), '[.]', ' '),
+         To = str_replace(str_extract(To, "[^@]+"), '[.]', ' '),
+         Date = as.Date(Date, format="%d/%m/%Y"),
+         Subject = str_replace(Subject, "RE: ", "")) %>%
+  left_join(gastech_employee %>% select(label, id), by = c("From" = "label")) %>%
+  rename(source = id) %>%
+  left_join(gastech_employee %>% select(label, id), by = c("To" = "label")) %>% 
+  rename(target = id) 
+
+email_df
+write_rds(email_df, "data/gastech_emails.rds") 
+```
+
+
+
+

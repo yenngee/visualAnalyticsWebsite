@@ -28,6 +28,7 @@ The data preparation for the news articles will be done by 2 parts.
 
 ```r
 library(tidyverse)
+library(readxl)
 library(tidytext)
 library(lubridate)
 library(naniar)
@@ -321,3 +322,97 @@ wordcloud(words = count_words$word,
 ```
 
 <img src="{{< blogdown/postref >}}index.en_files/figure-html/visualize_bigrams-1.png" width="672" />
+
+## email 
+
+* Load GASTech Employees. 
+* Cleaned up the dates 
+* Created id, label from `EmailAddress`such that it can also be used as nodes in network analysis 
+
+
+```r
+gastech_employee <- read_excel('data/EmployeeRecords.xlsx', sheet = "Employee Records")
+gastech_employee <- gastech_employee %>%
+  mutate(label = str_replace(str_extract(EmailAddress, "[^@]+"), '[.]', ' '), 
+         Birthdate = as.Date(BirthDate, format="%Y-%m-%d"),
+         PassportIssueDate = as.Date(PassportIssueDate, format="%Y-%m-%d") ) %>%
+  arrange(label)%>% 
+  rowid_to_column("id")
+
+write_rds(gastech_employee, "data/gastech_employees.rds") 
+
+gastech_employee
+```
+
+```
+## # A tibble: 54 x 21
+##       id LastName       FirstName BirthDate           BirthCountry Gender
+##    <int> <chr>          <chr>     <dttm>              <chr>        <chr> 
+##  1     1 Campo-Corrente Ada       1951-11-26 00:00:00 Tethys       Female
+##  2     2 Morlun         Adan      1984-10-09 00:00:00 Kronos       Male  
+##  3     3 Nubarron       Adra      1968-06-06 00:00:00 Tethys       Female
+##  4     4 Hafon          Albina    1987-06-14 00:00:00 Kronos       Female
+##  5     5 Ribera         Anda      1975-11-17 00:00:00 Tethys       Female
+##  6     6 Calzas         Axel      1975-09-13 00:00:00 Tethys       Male  
+##  7     7 Hawelon        Benito    1978-11-23 00:00:00 Kronos       Male  
+##  8     8 Ovan           Bertrand  1964-12-12 00:00:00 Tethys       Male  
+##  9     9 Frente         Birgitta  1976-07-31 00:00:00 Tethys       Female
+## 10    10 Tempestad      Brand     1979-05-14 00:00:00 Tethys       Male  
+## # ... with 44 more rows, and 15 more variables: CitizenshipCountry <chr>,
+## #   CitizenshipBasis <chr>, CitizenshipStartDate <dttm>, PassportCountry <chr>,
+## #   PassportIssueDate <date>, PassportExpirationDate <dttm>,
+## #   CurrentEmploymentType <chr>, CurrentEmploymentTitle <chr>,
+## #   CurrentEmploymentStartDate <dttm>, EmailAddress <chr>,
+## #   MilitaryServiceBranch <chr>, MilitaryDischargeType <chr>,
+## #   MilitaryDischargeDate <dttm>, label <chr>, Birthdate <date>
+```
+
+* Load their emails headers 
+* cleaned the dates
+* added source and target using id from the `gastech_employee` dataframe
+
+
+
+```r
+raw_email_df <- read_csv('data/email headers.csv')
+# raw_email_df
+
+email_df <- raw_email_df %>% 
+  separate_rows("To", sep=", ") %>%
+  filter(From != To) %>% 
+  mutate(From = str_replace(str_extract(From, "[^@]+"), '[.]', ' '),
+         To = str_replace(str_extract(To, "[^@]+"), '[.]', ' '),
+         Date = as.Date(Date, format="%d/%m/%Y"),
+         Subject = str_replace(Subject, "RE: ", "")) %>%
+  left_join(gastech_employee %>% select(label, id), by = c("From" = "label")) %>%
+  rename(source = id) %>%
+  left_join(gastech_employee %>% select(label, id), by = c("To" = "label")) %>% 
+  rename(target = id) 
+
+email_df
+```
+
+```
+## # A tibble: 8,185 x 6
+##    From          To           Date       Subject                   source target
+##    <chr>         <chr>        <date>     <chr>                      <int>  <int>
+##  1 Varja Lagos   Hennie Osva~ 2014-06-01 Patrol schedule changes       51     24
+##  2 Varja Lagos   Loreto Bodr~ 2014-06-01 Patrol schedule changes       51     38
+##  3 Varja Lagos   Inga Ferro   2014-06-01 Patrol schedule changes       51     26
+##  4 Brand Tempes~ Birgitta Fr~ 2014-06-01 Wellhead flow rate data       10      9
+##  5 Brand Tempes~ Lars Azada   2014-06-01 Wellhead flow rate data       10     34
+##  6 Brand Tempes~ Felix Balas  2014-06-01 Wellhead flow rate data       10     20
+##  7 Isak Baza     Lucas Alcaz~ 2014-06-01 GT-SeismicProcessorPro B~     29     39
+##  8 Lucas Alcazar Isak Baza    2014-06-01 GT-SeismicProcessorPro B~     39     29
+##  9 Linnea Bergen Rachel Pant~ 2014-06-01 Upcoming birthdays            37     45
+## 10 Linnea Bergen Lars Azada   2014-06-01 Upcoming birthdays            37     34
+## # ... with 8,175 more rows
+```
+
+```r
+write_rds(email_df, "data/gastech_emails.rds") 
+```
+
+
+
+
