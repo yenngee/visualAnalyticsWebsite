@@ -26,7 +26,7 @@ all_news_today_folder <- paste(new_article_folder, "/All News Today", sep = '' )
 ```
 
 # Introduction 
-In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](). 
+In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/). 
 The data preparation for the news articles will be done by 2 parts. 
 
 1. Loading all text articles into 1 dataframe 
