@@ -296,5 +296,40 @@ write_rds(email_df, "data/gastech_emails.rds")
 ```
 
 
+## people relationships 
 
+We start off from the gastech employees, because we have the entire name list. 
 
+```{r gastech_people}
+people_df <- gastech_employee %>%
+  select(FirstName, LastName) %>% 
+  mutate(organization = 'GASTech')
+
+glimpse(people_df)
+```
+
+Next from the literature review, we are able to extract some names especially under the 
+
+```{r other_people}
+
+other_people <- tribble(
+  ~FirstName, ~LastName, ~organization,
+  "Henk", "Bodrogi", 'POK',
+  "Carmine",  "Osvaldo", 'POK',
+  'Elian', 'Karel', 'POK',
+  'Silvia', 'Marek', 'POK', 
+  'Mandor', 'Vann', 'POK', 
+  'Petrus', 'Gerhard', 'Homeland Illumination',
+  'Lorenzo Di', 'Stefano', 'Public',
+  'Kyrla', 'Halford', 'Public', 
+  'Fredrick N.', 'Wagner', 'Public', 
+  'Westly B.', 'Andrews', 'Public',
+  'Hank', 'Fluss', 'GASTech', 
+  'Cesare', 'Nespola', 'Government', 
+  'Lemual', 'Vann', 'Public', 
+  'Neske', 'Vann', 'Public', 
+  'Juliana', 'Vann', 'Public', 
+  
+)
+other_people
+```
