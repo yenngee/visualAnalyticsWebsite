@@ -12,6 +12,8 @@ output:
     toc: true
 ---
 
+
+
 # Introduction 
 In this post, I will be running through the literature review of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). This data set and scenario has been used as a challenge before in 2014. Hence, I will be looking through some of the 'answers' and methodology that other groups have already [completed](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/). 
 
@@ -20,6 +22,7 @@ The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/
 
 ## Information obtained XD 
 
+Below is a collection of information extracted from previous groups. 
 
 ### Events on Jan 20th and 21st is listed below:
 
@@ -60,22 +63,12 @@ Collated by [Peking University](http://visualdata.wustl.edu/varepository/VAST%20
 
 The viz below is by [Tianjin-Cai](http://visualdata.wust.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Tianjin%20University%20-%20Cai/)
 
-
-```r
-knitr::include_graphics("image/tianjin_cai_summary_5leaders.jpg")
-```
-
 ![](image/tianjin_cai_summary_5leaders.jpg)<!-- -->
 ### Extended Network of POK
 
 The viz below is by [Tianjin-Cai](http://visualdata.wust.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Tianjin%20University%20-%20Cai/)
 
-
-```r
-knitr::include_graphics("image/tianjincai_network_of_pok.png")
-```
-
-<img src="image/tianjincai_network_of_pok.png" width="778" />
+<img src="image/tianjincai_network_of_pok.png" width="519" />
 
 
 ## Methodology and Visualization
@@ -83,11 +76,6 @@ knitr::include_graphics("image/tianjincai_network_of_pok.png")
 ### Media clusters 
 
 The viz below is by [Tianjin-Cai](http://visualdata.wust.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Tianjin%20University%20-%20Cai/)
-
-
-```r
-knitr::include_graphics("image/cluster_medias_word_association.jpg")
-```
 
 ![](image/cluster_medias_word_association.jpg)<!-- -->
 
@@ -110,11 +98,6 @@ I might change this to a network graph, differentiating the nodes between source
 
 The viz below is by [Tianjin-Cai](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Tianjin%20University%20-%20Gao/)
 
-
-```r
-knitr::include_graphics("image/tianjingao_topics_sentiment_over_time.JPG")
-```
-
 ![](image/tianjingao_topics_sentiment_over_time.JPG)<!-- -->
 
 The second and third area chart is quite interesting as they show the amount of positivity/negativity and the topics trend over the year. 
@@ -126,11 +109,6 @@ However, there are certain things that could be improved on, or have doubts abou
 ### relationship between people 
 
 The viz below is by [Peking University](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Peking%20University/)
-
-
-```r
-knitr::include_graphics("image/relationship network graph.gif")
-```
 
 ![](image/relationship network graph.gif)<!-- -->
 

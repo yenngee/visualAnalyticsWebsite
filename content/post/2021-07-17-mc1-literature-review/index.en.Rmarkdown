@@ -12,6 +12,14 @@ output:
     toc: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=FALSE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
 # Introduction 
 In this post, I will be running through the literature review of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). This data set and scenario has been used as a challenge before in 2014. Hence, I will be looking through some of the 'answers' and methodology that other groups have already [completed](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/). 
 
@@ -20,6 +28,7 @@ The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/
 
 ## Information obtained XD 
 
+Below is a collection of information extracted from previous groups. 
 
 ### Events on Jan 20th and 21st is listed below:
 
