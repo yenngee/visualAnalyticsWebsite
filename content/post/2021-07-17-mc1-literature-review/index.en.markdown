@@ -6,7 +6,7 @@ lastmod: '2021-07-25'
 slug: []
 cover: "/img/lit_review.jpg"
 categories: []
-tags: ['MITB', 'Text Analytics', "MC1"]
+tags: ['MITB', "MC1", 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
@@ -129,4 +129,5 @@ For the edges, i want to determine 3 types of relationships
 
 * colleagues: people who work in / work for the  
 * familial 
-* 
+
+

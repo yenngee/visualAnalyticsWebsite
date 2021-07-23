@@ -6,7 +6,7 @@ lastmod: '2021-07-25'
 slug: []
 cover: "/img/data_discovery.png"
 categories: []
-tags: ['MITB', "MC1", 'Text Analytics']
+tags: ["MC1", 'MITB', 'Text Analytics']
 output:
   blogdown::html_page: 
     toc: true
@@ -91,3 +91,6 @@ This section will be limited to 6 images and 400 words.
 
 
 ## Conclusion 
+
+TBC
+
