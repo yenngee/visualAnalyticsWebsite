@@ -1,8 +1,8 @@
 ---
 title: 'MC1: Literature Review'
 author: 'Ng Yen Ngee'
-date: '2021-07-17'
-lastmod: '2021-07-17'
+date: '2021-07-24'
+lastmod: '2021-07-25'
 slug: []
 cover: "/img/lit_review.jpg"
 categories: []
@@ -18,7 +18,6 @@ In this post, I will be running through the literature review of [Vast Challenge
 The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/).
 
 
-
 ## Information obtained XD 
 
 
@@ -26,9 +25,10 @@ The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/
 
 Collated by [Peking University](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Peking%20University/)
 
-*Jan 20th:*
 
-10:00 AM:The meeting of the annual company of GASTech with a reception of government of Kronos is closed and the executives have not yet arrived. [Article 140] <br>
+> *Jan 20th:*
+> 
+> 10:00 AM:The meeting of the annual company of GASTech with a reception of government of Kronos is closed and the executives have not yet arrived. [Article 140] <br>
 10:15 AM: Fire alarm goes off at GASTech headquarter. Abila Fire Department trucks were dispatched to GASTech Kronos headquarters. [Article 692, 738] <br>
 10:20 AM: GASTech employees evacuate the building and a helicopter leaves from the roof of the building. [Article 763] <br>
 10:25 AM: Firemen have entered the GASTech headquarter. [Article 13,470,563,844]<br>
@@ -48,11 +48,13 @@ Collated by [Peking University](http://visualdata.wustl.edu/varepository/VAST%20
 18:10 PM: The GASTech executive jet reportedly arrived in Tethys a few hours ago bearing Sten Sanjorge Jr. The jet was quickly refueled and then departed for Abila International Airport with six GASTech officials onboard. [Article 26]<br>
 22:32 PM: Airport officials have confirmed the arrival of a private jet from Tethys. Several passengers departed into a waiting limousine which drove directly to Abila Police Headquarters. [Article 744]
 
-*Jan 21st:*
 
-9:00 AM: The Abila police holds a press conference on the kidnapping GASTech headquarters. Police inform reporters that four of the GASTech employees whose whereabouts were unconfirmed yesterday were found overnight, leaving ten people who are presumed missing. [Article 276,372] <br>
+> *Jan 21st:*
+> 
+> 9:00 AM: The Abila police holds a press conference on the kidnapping GASTech headquarters. Police inform reporters that four of the GASTech employees whose whereabouts were unconfirmed yesterday were found overnight, leaving ten people who are presumed missing. [Article 276,372] <br>
 10:16 AM: A GASTech spokesman announces that CEO Sten Sanjorge is not among the missing GASTech employees, and has returned to Tethys. [Article 556,624]<br>
 12:00 AM: The Protectors of Kronos have released a statement claiming responsibility for the kidnapping of GASTech employees demanding a $20 million ransom. [Article 106,261,407,708] <br>
+
 
 ### Leaders of POK
 
@@ -109,3 +111,29 @@ However, there are certain things that could be improved on, or have doubts abou
 * how did he determine the value of positivity and negativity in the second chart? 
 * why were those words chosen? 
 
+### relationship between people 
+
+The viz below is by [Peking University](http://visualdata.wustl.edu/varepository/VAST%20Challenge%202014/challenges/MC1%20-%20Disappearance%20at%20GASTech/entries/Peking%20University/)
+
+```{r}
+knitr::include_graphics("image/relationship network graph.gif")
+```
+
+This visualization is good because it shows all of the important names and their connections to each other. However, it is a little messy in the following sense: 
+
+* Organizations and people's names are all nodes which makes it confusing. 
+* the coloured edges represents different 'relationship, but some of them are labeled differently. 
+* the labels are too small and hardly visible and also makes the entire diagram messy. 
+
+I would want to recreate a similar picture but with a simplified relationships. 
+For the nodes, I want to be able to differentiate different people with their official 'organization' 
+
+* POK
+* Government 
+* 
+
+For the edges, i want to determine 3 types of relationships 
+
+* colleagues: people who work in / work for the  
+* familial 
+* 

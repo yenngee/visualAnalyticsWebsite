@@ -1,8 +1,8 @@
 ---
 title: 'MC1: Data Preperation'
 author: "Ng Yen Ngee"
-date: '2021-07-11'
-lastmod: '2021-07-15'
+date: '2021-07-23'
+lastmod: '2021-07-25'
 slug: []
 cover: "/img/data_preperation.jpg"
 categories: []
@@ -18,10 +18,12 @@ output:
 
 # Introduction 
 In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/). 
-The data preparation for the news articles will be done by 2 parts. 
 
-1. Loading all text articles into 1 dataframe 
-2. Tokenizing the text and cleaning the text tokens. 
+The data preparation for the news articles will be done in different parts: 
+
+1. Loading all text articles into 1 dataframe then cleaning the data frame. 
+2. Loading Email headers and GAS tech employees 
+3. Creating people_record tibble that summarizes the people and relationships in this scenario
 
 ## Import packages 
 
@@ -414,5 +416,70 @@ write_rds(email_df, "data/gastech_emails.rds")
 ```
 
 
+## people relationships 
+
+We start off from the gastech employees, because we have the entire name list. 
 
 
+```r
+people_df <- gastech_employee %>%
+  select(FirstName, LastName) %>% 
+  mutate(organization = 'GASTech')
+
+glimpse(people_df)
+```
+
+```
+## Rows: 54
+## Columns: 3
+## $ FirstName    <chr> "Ada", "Adan", "Adra", "Albina", "Anda", "Axel", "Benito"~
+## $ LastName     <chr> "Campo-Corrente", "Morlun", "Nubarron", "Hafon", "Ribera"~
+## $ organization <chr> "GASTech", "GASTech", "GASTech", "GASTech", "GASTech", "G~
+```
+
+Next from the literature review, we are able to extract some names especially under the 
+
+
+```r
+other_people <- tribble(
+  ~FirstName, ~LastName, ~organization,
+  "Henk", "Bodrogi", 'POK',
+  "Carmine",  "Osvaldo", 'POK',
+  'Elian', 'Karel', 'POK',
+  'Silvia', 'Marek', 'POK', 
+  'Mandor', 'Vann', 'POK', 
+  'Petrus', 'Gerhard', 'Homeland Illumination',
+  'Lorenzo Di', 'Stefano', 'Public',
+  'Kyrla', 'Halford', 'Public', 
+  'Fredrick N.', 'Wagner', 'Public', 
+  'Westly B.', 'Andrews', 'Public',
+  'Hank', 'Fluss', 'GASTech', 
+  'Cesare', 'Nespola', 'Government', 
+  'Lemual', 'Vann', 'Public', 
+  'Neske', 'Vann', 'Public', 
+  'Juliana', 'Vann', 'Public', 
+  
+)
+other_people
+```
+
+```
+## # A tibble: 15 x 3
+##    FirstName   LastName organization         
+##    <chr>       <chr>    <chr>                
+##  1 Henk        Bodrogi  POK                  
+##  2 Carmine     Osvaldo  POK                  
+##  3 Elian       Karel    POK                  
+##  4 Silvia      Marek    POK                  
+##  5 Mandor      Vann     POK                  
+##  6 Petrus      Gerhard  Homeland Illumination
+##  7 Lorenzo Di  Stefano  Public               
+##  8 Kyrla       Halford  Public               
+##  9 Fredrick N. Wagner   Public               
+## 10 Westly B.   Andrews  Public               
+## 11 Hank        Fluss    GASTech              
+## 12 Cesare      Nespola  Government           
+## 13 Lemual      Vann     Public               
+## 14 Neske       Vann     Public               
+## 15 Juliana     Vann     Public
+```

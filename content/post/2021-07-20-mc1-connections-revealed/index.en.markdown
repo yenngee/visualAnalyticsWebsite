@@ -2,7 +2,7 @@
 title: 'MC1: Connections Revealed'
 author: 'Ng Yen Ngee'
 date: '2021-07-20'
-lastmod: '2021-07-20'
+lastmod: '2021-07-25'
 slug: []
 cover: "/img/connections.jpg"
 categories: []
@@ -15,7 +15,7 @@ output:
 
 
 # Introduction 
-In this post, I will be running through the Data Preparation for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/). 
+In this post, I will be running through the revaluation of connections as part of completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/). 
 
 Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives.
 
@@ -199,3 +199,4 @@ gastech_emails %>%
 ## 10 Anyone have time to help troubleshoot some software? 2014-10-01     8
 ## # ... with 232 more rows
 ```
+

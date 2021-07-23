@@ -1,8 +1,8 @@
 ---
 title: 'MC1: Findings and Discoveries'
 author: "Ng Yen Ngee"
-date: '2021-07-16'
-lastmod: '2021-07-20'
+date: '2021-07-25'
+lastmod: '2021-07-25'
 slug: []
 cover: "/img/data_discovery.png"
 categories: []
@@ -69,5 +69,8 @@ This section will be limited to 6 images and 500 words.
 
 
 ## 3) Connections and Relationships 
-This section will answer part 3 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. 
-This section will be limited to 6 images and 500 words.
+This section will answer part 3 of the challenge: Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. 
+This section will be limited to 6 images and 400 words.
+
+
+

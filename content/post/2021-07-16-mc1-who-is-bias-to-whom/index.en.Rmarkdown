@@ -1,8 +1,8 @@
 ---
 title: 'MC1: Who is bias to whom?'
 author: 'Ng Yen Ngee'
-date: '2021-07-16'
-lastmod: '2021-07-16'
+date: '2021-07-20'
+lastmod: '2021-07-25'
 slug: []
 cover: "/img/bias.jpg"
 categories: []
@@ -21,8 +21,7 @@ knitr::opts_chunk$set(fig.retina = 3,
 ```
 
 # Introduction 
-In this post, I will be running through the thought process of answering Q1 of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html):  
-Which are primary sources and which are derivative sources? What are the relationships between the primary and derivative sources? 
+In this post, I will be running through the thought process figuring out the biasness of the news article sources from [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html)
 
 The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/).
 
