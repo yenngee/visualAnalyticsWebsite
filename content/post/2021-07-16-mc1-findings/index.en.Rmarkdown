@@ -12,6 +12,14 @@ output:
     toc: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.retina = 3, 
+                      echo=FALSE,
+                      eval=TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
 # Introduction 
 In this post, I will be running through the findings and analysis of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). This will be my main page and answer to my class [assignment](https://isss608.netlify.app/assignment.html). 
 
@@ -25,10 +33,10 @@ Below and the table of content on the left is how we can navigate through the po
 * Literature Review [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-17-mc1-literature-review/)
 * Data Preparation [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/)
 * Analysis 
-  * 1a) Primary Vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
-  * 1b) Relationships:Primary vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-explore-relationships-between-articles/)
-  * 2) Who is biased? [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
-  * 3) Connections and Relationships [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/)
+  * 1a Primary Vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
+  * 1b Relationships:Primary vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-explore-relationships-between-articles/)
+  * 2 Who is biased? [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
+  * 3 Connections and Relationships [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/)
 
 ## Literature Review 
 
@@ -40,17 +48,121 @@ The complete **Data Preparation process** can be found [here](https://yenngee-da
 ```{r load package}
 library(tidyverse)
 library(tidytext)
+library(stringr)
+library(gridExtra)
+```
+
+```{r load data}
+cleaned_text_source <- read_rds("data/news_article_clean_primary_vs_derivative.rds")
 ```
 
 ## Analysis
 ### 1a) Primary Vs Derivative Sources 
 This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources?
-The combined section of 1a) and 1b) will be limited to 8 images and 300 words. The step by step thought process and description of how to obtain.
 
-Primary Sources is "first-hand" information. In terms of data, we've defined an article as the following: 
- 
+Primary Sources is "first-hand" information, while secondary sources provide analysis, commentary or criticism on the Primary source. In terms of data, we've defined primary source as the following: 
+- article text start with a time format 
+- article title contains the word blog 
+- duplicated article titles that is printed first 
+
+We have the following output: 
+
+```{r source_type_per_article}
+full_source_type_per_article <- expand_grid(source = unique(cleaned_text_source$source), 
+                                             is_primary = c('primary', 'derivative')) 
+
+source_type_per_article <- cleaned_text_source %>%
+  group_by(source, is_primary, primary_type) %>%
+  summarize(n = n()) %>% 
+  ungroup() %>%
+  right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
+  arrange(desc(n))
+
+source_type_per_article_perc <- cleaned_text_source %>%
+  group_by(source, is_primary) %>%
+  summarize(n = n()) %>% 
+  ungroup() %>%
+  right_join(full_source_type_per_article, by = c('source', 'is_primary')) %>%
+  arrange(desc(n)) %>% 
+  pivot_wider(names_from= is_primary, values_from=n) %>%
+  replace_na(list(derivative=0L, primary=0L)) %>%
+  mutate(primary_perc = primary/(derivative + primary), 
+         source = as.character(source)) %>%
+  select(source, primary_perc)
+
+source_type_per_article <- source_type_per_article %>%
+  left_join(source_type_per_article_perc) %>%
+  mutate(source = fct_reorder(source, primary_perc))
+```
+
+**Primary VS Derivative of each source**
+
+```{r plot_pyramid3, echo=FALSE}
+plot_derivative <- source_type_per_article %>% 
+  filter(is_primary == "derivative") %>%
+  ggplot(aes(x=source, y=n, fill=primary_type)) +
+  geom_bar(stat='identity', fill="#0072B2") +
+  scale_y_continuous('') + 
+  ylim(0,120)+
+  theme(legend.position = 'none',
+        axis.title.y = element_blank(),
+        plot.title = element_text(size = 11.5, hjust = 0.5),
+        plot.margin=unit(c(0.1,0.2,0.1,-.1),"cm"),
+        axis.ticks.y = element_blank(), 
+        axis.text.y = element_text(hjust = 0.5)) + #theme_bw()$axis.text.y,
+  ggtitle("Derivative") + 
+  coord_flip() 
+  
+plot_primary <- source_type_per_article %>% 
+  filter(is_primary == "primary") %>%
+  ggplot(aes(x=source, y=n)) +
+  geom_bar(stat='identity', fill="#D55E00") +
+  # ylim(0,120)+
+  scale_y_continuous(trans = 'reverse', limits=c(120,0))+ 
+  theme(legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(), 
+        plot.title = element_text(size = 11.5, hjust = 0.5),
+        plot.margin=unit(c(0.1,0,0.1,0.05),"cm")) + 
+  ggtitle("Primary") +
+  coord_flip()
+
+plot_sources <- source_type_per_article %>% 
+  filter(is_primary == "derivative") %>%
+  ggplot(aes(x=source, y=n)) +
+  geom_bar(stat='identity')+
+  geom_text(aes(y=0, label=source))+ 
+  coord_flip()
+
+grid.arrange(plot_primary, plot_derivative, 
+             widths=c(0.4,0.6),
+             ncol=2
+)
+``` 
 
 
+**Percentile of Primary VS Derivative of each source**
+
+```{r plot_perc_bar, echo=FALSE}
+source_type_per_article %>%
+  ggplot(aes(fill=is_primary, y=n, x=source)) +
+  geom_bar(position="fill", stat="identity") +
+  coord_flip()
+
+```
+
+```{r plot_breakdown_primary_type}
+source_type_per_article %>%
+  filter(primary_type %in% c('first post', 'blog post')) %>%
+  ggplot(aes(fill=primary_type, y=n, x=source)) +
+  geom_bar( stat="identity") +
+  coord_flip()
+```
+
+ANALYSIS WRITE HERE 
+
+We can see that "Modern Rubicon" and "Centrum Sentinel" are fully 
 
 ### 1b) Relationships:Primary vs Derivative Sources
 This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?

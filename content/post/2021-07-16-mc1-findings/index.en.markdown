@@ -12,6 +12,8 @@ output:
     toc: true
 ---
 
+
+
 # Introduction 
 In this post, I will be running through the findings and analysis of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). This will be my main page and answer to my class [assignment](https://isss608.netlify.app/assignment.html). 
 
@@ -25,10 +27,10 @@ Below and the table of content on the left is how we can navigate through the po
 * Literature Review [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-17-mc1-literature-review/)
 * Data Preparation [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/)
 * Analysis 
-  * 1a) Primary Vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
-  * 1b) Relationships:Primary vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-explore-relationships-between-articles/)
-  * 2) Who is biased? [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
-  * 3) Connections and Relationships [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/)
+  * 1a Primary Vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
+  * 1b Relationships:Primary vs Derivative Sources [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-explore-relationships-between-articles/)
+  * 2 Who is biased? [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
+  * 3 Connections and Relationships [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/)
 
 ## Literature Review 
 
@@ -38,40 +40,36 @@ Below and the table of content on the left is how we can navigate through the po
 The complete **Data Preparation process** can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/). The data preparation has included a step by step description of understanding the data and transforming unstructured text such as the news articles into a structured dataframe. For this portion of the post, I will be starting from a cleaned data source. 
 
 
-```r
-library(tidyverse)
-```
 
-```
-## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
-```
 
-```
-## v ggplot2 3.3.5     v purrr   0.3.4
-## v tibble  3.1.2     v dplyr   1.0.7
-## v tidyr   1.1.3     v stringr 1.4.0
-## v readr   1.4.0     v forcats 0.5.1
-```
-
-```
-## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
-## x dplyr::filter() masks stats::filter()
-## x dplyr::lag()    masks stats::lag()
-```
-
-```r
-library(tidytext)
-```
 
 ## Analysis
 ### 1a) Primary Vs Derivative Sources 
 This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources?
-The combined section of 1a) and 1b) will be limited to 8 images and 300 words. The step by step thought process and description of how to obtain.
 
-Primary Sources is "first-hand" information. In terms of data, we've defined an article as the following: 
- 
+Primary Sources is "first-hand" information, while secondary sources provide analysis, commentary or criticism on the Primary source. In terms of data, we've defined primary source as the following: 
+- article text start with a time format 
+- article title contains the word blog 
+- duplicated article titles that is printed first 
+
+We have the following output: 
 
 
+
+**Primary VS Derivative of each source**
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_pyramid3-1.png" width="672" />
+
+
+**Percentile of Primary VS Derivative of each source**
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_perc_bar-1.png" width="672" />
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/plot_breakdown_primary_type-1.png" width="672" />
+
+ANALYSIS WRITE HERE 
+
+We can see that "Modern Rubicon" and "Centrum Sentinel" are fully 
 
 ### 1b) Relationships:Primary vs Derivative Sources
 This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?
