@@ -1,7 +1,7 @@
 ---
 title: 'MC1: Who is bias to whom?'
 author: 'Ng Yen Ngee'
-date: '2021-07-20'
+date: '2021-07-19'
 lastmod: '2021-07-25'
 slug: []
 cover: "/img/bias.jpg"

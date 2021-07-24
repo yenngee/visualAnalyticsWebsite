@@ -1,7 +1,7 @@
 ---
 title: 'MC1: Primary vs Derivative Sources'
 author: 'Ng Yen Ngee'
-date: '2021-07-22'
+date: '2021-07-21'
 lastmod: '2021-07-25'
 slug: []
 cover: "/img/p_vs_s.png"

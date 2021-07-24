@@ -1,7 +1,7 @@
 ---
 title: 'MC1: Literature Review'
 author: 'Ng Yen Ngee'
-date: '2021-07-24'
+date: '2021-07-23'
 lastmod: '2021-07-25'
 slug: []
 cover: "/img/lit_review.jpg"
@@ -139,11 +139,12 @@ For the nodes, I want to be able to differentiate different people with their of
 
 * POK
 * Government 
-* 
+* General Public 
 
 For the edges, i want to determine 3 types of relationships 
 
 * colleagues: people who work in / work for the  
-* familial 
+* familial relationships (based on known relationships or probable family due to same surname)
+* news articles mentions (names that are mentioned together)
 
 

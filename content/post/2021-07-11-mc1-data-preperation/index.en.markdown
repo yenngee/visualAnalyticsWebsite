@@ -1,7 +1,7 @@
 ---
 title: 'MC1: Data Preperation'
 author: "Ng Yen Ngee"
-date: '2021-07-23'
+date: '2021-07-22'
 lastmod: '2021-07-25'
 slug: []
 cover: "/img/data_preperation.jpg"

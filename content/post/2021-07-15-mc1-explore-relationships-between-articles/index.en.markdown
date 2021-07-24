@@ -1,7 +1,7 @@
 ---
 title: 'MC1: Explore relationships between Articles'
 author: 'Ng Yen Ngee'
-date: '2021-07-21'
+date: '2021-07-20'
 lastmod: '2021-07-25'
 slug: []
 cover: "/img/explore_relationships.png"
@@ -15,9 +15,9 @@ output:
 
 
 # Introduction 
-In this post, I will be running through the exploration of relationships between the articles for completing [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html). The analysis done after preparing the data can be found [here](https://vast-challenge.github.io/2021/MC1.html). 
+In this post, I will be running through part 2b of [Vast Challenge MC1](https://vast-challenge.github.io/2021/MC1.html) which answers this question: What are the relationships between the primary and derivative sources? 
 
-The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/).
+The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-findings/#1b-relationshipsprimary-vs-derivative-sources).
 
 
 ## Preperation 
@@ -89,6 +89,27 @@ words_by_articles <- token_words %>%
   count(source, word, sort=TRUE) %>% 
   ungroup()
 
+words_by_articles
+```
+
+```
+## # A tibble: 26,679 x 3
+##    source                word           n
+##    <chr>                 <chr>      <int>
+##  1 The Abila Post        gastech       88
+##  2 The Light of Truth    gastech       65
+##  3 The Tulip             gastech       65
+##  4 The General Post      gastech       64
+##  5 Kronos Star           police        63
+##  6 News Online Today     gastech       60
+##  7 The Abila Post        government    59
+##  8 Homeland Illumination gastech       57
+##  9 Kronos Star           gastech       56
+## 10 News Online Today     government    56
+## # ... with 26,669 more rows
+```
+
+```r
 articles_cors <- words_by_articles %>%
   pairwise_cor(source, word,n,sort=TRUE)
 
@@ -114,48 +135,136 @@ articles_cors
 
 
 ```r
+articles_cors%>% 
+  arrange(desc(correlation)) %>%
+  rowid_to_column('sort') %>%
+  ggplot(aes(sort, correlation)) +
+  geom_point()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/cor_viz-1.png" width="672" />
+
+```r
 articles_cors %>%
-  filter(correlation > .7) %>%
+  filter(correlation > .65) %>%
   graph_from_data_frame() %>%
   ggraph(layout='fr') + 
-  geom_edge_link(aes(alpha = correlation, width = correlation)) + #alpha gives the shade
+  geom_edge_link(aes(alpha = correlation) , width = 1.5) + #alpha gives the shade
   geom_node_point(size=6, color="lightblue") +
   geom_node_text(aes(label=name), color="red", repel=TRUE) + 
   theme_void()
 ```
 
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/cor_viz-1.png" width="672" />
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/cor_viz-2.png" width="672" />
 
 ## ngrams
 We look at words as consecutive terms. 
 
 
 ```r
-# bigram_counts <- bigrams_filtered  %>%
-#   count(word, sort=TRUE) %>%
-#   filter(n>3) 
-# bigram_counts
-# 
-# bigram_counts %>%
-#   graph_from_data_frame() %>%
-#   ggraph(layout='fr') +
-#   geom_edge_link() +
-#   geom_node_point() +
-#   geom_node_text(aes(label=name), vjust=1, hjust=1) +
-#   theme_void()
-# 
-# a <- grid::arrow(type="closed",
-#                  length=unit(.15, "inches"))
-# bigram_counts %>%
-#   graph_from_data_frame() %>%
-#   ggraph(layout='fr') +
-#   geom_edge_link( #aes(edge_alpha = n),
-#                  show.legend = FALSE,
-#                  arrow = a,
-#                  end_cap = circle(.07, 'inches')
-#                  ) +
-#   geom_node_point(color = "lightblue",
-#                   size=5) +
-#   geom_node_text(aes(label=name), vjust=1, hjust=1) +
-#   theme_void()
+bigrams <- cleaned_text %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2)
+
+bigrams_sep <- bigrams %>% 
+  filter(bigram != 'NA') %>%
+  separate(bigram, c("word1", "word2"), sep=" ")
+
+bigrams_filtered <- bigrams_sep %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2%in% stop_words$word)%>%
+  mutate(word = paste(word1, word2, sep=" "))
+
+bigram_counts <- bigrams_filtered  %>%
+  count(word, sort=TRUE) %>%
+  filter(n>3)
+bigram_counts
 ```
+
+```
+## # A tibble: 1,289 x 2
+##    word                      n
+##    <chr>                 <int>
+##  1 sten sanjorge           184
+##  2 sanjorge jr             177
+##  3 police force            160
+##  4 elian karel             127
+##  5 gastech international   109
+##  6 gastech kronos           77
+##  7 ceo sten                 65
+##  8 gastech employees        63
+##  9 juliana vann             62
+## 10 kronos pok               62
+## # ... with 1,279 more rows
+```
+
+```r
+bigrams_by_articles <- bigrams_filtered %>% 
+  count(source, word, sort=TRUE) %>% 
+  ungroup()
+
+bigrams_by_articles
+```
+
+```
+## # A tibble: 17,928 x 3
+##    source                word                      n
+##    <chr>                 <chr>                 <int>
+##  1 Homeland Illumination jan 2014                 37
+##  2 The Truth             police force             34
+##  3 Worldwise             police force             34
+##  4 Homeland Illumination 20 jan                   31
+##  5 The Light of Truth    sanjorge jr              23
+##  6 The Tulip             sanjorge jr              23
+##  7 The World             gastech international    22
+##  8 The Wrap              police force             21
+##  9 The Orb               police force             20
+## 10 The World             sanjorge jr              20
+## # ... with 17,918 more rows
+```
+
+```r
+articles_cors <- bigrams_by_articles %>%
+  pairwise_cor(source, word,n,sort=TRUE)
+
+articles_cors
+```
+
+```
+## # A tibble: 812 x 3
+##    item1               item2               correlation
+##    <chr>               <chr>                     <dbl>
+##  1 Who What News       The World                 0.901
+##  2 The World           Who What News             0.901
+##  3 International News  Kronos Star               0.763
+##  4 Kronos Star         International News        0.763
+##  5 Central Bulletin    The Abila Post            0.750
+##  6 The Abila Post      Central Bulletin          0.750
+##  7 The General Post    The Light of Truth        0.747
+##  8 The Light of Truth  The General Post          0.747
+##  9 World Source        International Times       0.709
+## 10 International Times World Source              0.709
+## # ... with 802 more rows
+```
+
+```r
+articles_cors%>% 
+  arrange(desc(correlation)) %>%
+  rowid_to_column('sort') %>%
+  ggplot(aes(sort, correlation)) +
+  geom_point()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/bigram_viz-1.png" width="672" />
+
+```r
+articles_cors %>%
+  filter(correlation > .35) %>%
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link(aes(alpha = correlation) , width = 1.5) + #alpha gives the shade
+  geom_node_point(size=6, color="lightblue") +
+  geom_node_text(aes(label=name), color="red", repel=TRUE) + 
+  theme_void()
+```
+
+<img src="{{< blogdown/postref >}}index.en_files/figure-html/bigram_viz-2.png" width="672" />
