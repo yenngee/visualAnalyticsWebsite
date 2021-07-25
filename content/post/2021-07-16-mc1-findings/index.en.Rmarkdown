@@ -471,6 +471,7 @@ We can view the connection between employees within GASTech by selecting the rel
 #### Highlights of Suspicious Emails sent by Suspicious People
 
 **Action: Virus detected on your system**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_action_virus_detected_on_your_system.JPG")
 ```
@@ -478,6 +479,7 @@ knitr::include_graphics("image/Email_action_virus_detected_on_your_system.JPG")
 Note: Emails of this header was sent out from Hennie Osvaldo and Inga Ferro who is not from the IT Department 
 
 **Cute**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_cute.JPG")
 ```
@@ -485,6 +487,7 @@ knitr::include_graphics("image/Email_cute.JPG")
 Note: 2 emails sent separately by 2 different pairs of people. 
 
 **Files**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_files.JPG")
 ```
@@ -492,6 +495,7 @@ knitr::include_graphics("image/Email_files.JPG")
 Note: 4 correspondance sent separately by 4 different pairs of people. 
 
 **FW: Arise inspiration for defenders of Kronos**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_fw_arise_inspiration_for_defenders_of_kronos.JPG")
 ```
@@ -499,13 +503,15 @@ knitr::include_graphics("image/Email_fw_arise_inspiration_for_defenders_of_krono
 Note: the title has hints of POK and receipients include suspicious people 
 
 **Plants**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_plants.JPG")
 ```
 
-Note: 3 correspondance sent separately by 3 different pairs of people. 
+Note: 3 correspondence sent separately by 3 different pairs of people. 
 
 **Do you like the flowers**
+
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_do_you_like_the_flowers.JPG")
 ```
