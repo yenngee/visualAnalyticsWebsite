@@ -121,7 +121,7 @@ people_edges
 
 ```
 
-We can see the network visualization here. 
+We can see the network visualization here.
 
 ```{r people_network_viz}
 visNetwork(people_nodes %>% filter(id %in% c(people_edges$from, people_edges$to)), people_edges) %>%

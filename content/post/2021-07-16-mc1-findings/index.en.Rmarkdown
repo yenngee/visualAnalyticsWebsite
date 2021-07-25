@@ -175,36 +175,36 @@ For simplicity, we defined primary type as primary if >75% of the articles are c
 
 ```{r news_article_groups}
 news_article_groups <- tribble(
-  ~source, ~group, ~is_primary,
-  "The Light of Truth", "A", 'Derivative', 
-  "The General Post",   "A", 'Derivative', 
-  "Who What News",      "A", 'Derivative', 
-  "The Tulip",          "A", 'Derivative', 
-  "The World",          "A", 'Primary', 
-  "World Journal",      "B", 'Derivative', 
-  "Everyday News",      "B", 'Derivative', 
-  "The Continent",      "B", 'Derivative', 
-  "World Source",       "B", 'Partially Primary', 
-  "International Times","B", 'Partially Primary', 
-  "All News Today",     "C", 'Partially Primary', 
-  "The Wrap",           "C", 'Derivative', 
-  "Daily Pegasus",      "C", 'Derivative', 
-  "The Orb",            "C", 'Derivative', 
-  "Homeland Illumination", "C", 'Primary', 
-  "International News", "D", 'Derivative', 
-  "Worldwise",          "D", 'Derivative', 
-  "The Truth",          "D", 'Derivative', 
-  "The Guide",          "D", 'Derivative', 
-  "Kronos Star",        "D", 'Partially Primary',  
-  "News Desk",          "E", 'Derivative', 
-  "The Explainer",      "E", 'Derivative', 
-  "Athena Speaks",      "E", 'Derivative', 
-  "Central Bulletin",   "E", 'Derivative', 
-  "The Abila Post",     "E", 'Primary', 
-  "News Online Today",  "Others", 'Derivative', 
-  "Modern Rubicon",     "Others", 'Primary', 
-  "Centrum Sentinel",   "Others", 'Primary', 
-  "Tethys News",        "Others",  'Derivative'
+  ~source, ~group, ~is_primary, ~bias, 
+  "The Light of Truth", "A", 'Derivative', 'gastech',
+  "The General Post",   "A", 'Derivative', 'gastech',
+  "Who What News",      "A", 'Derivative', 'gastech',
+  "The Tulip",          "A", 'Derivative', 'gastech',
+  "The World",          "A", 'Primary', 'gastech',
+  "World Journal",      "B", 'Derivative', 'unknown',
+  "Everyday News",      "B", 'Derivative', 'unknown',
+  "The Continent",      "B", 'Derivative', 'unknown',
+  "World Source",       "B", 'Partially Primary', 'unknown',
+  "International Times","B", 'Partially Primary', 'unknown',
+  "All News Today",     "C", 'Partially Primary', 'unknown',
+  "The Wrap",           "C", 'Derivative', 'unknown',
+  "Daily Pegasus",      "C", 'Derivative', 'unknown',
+  "The Orb",            "C", 'Derivative', 'unknown',
+  "Homeland Illumination", "C", 'Primary', 'pok',
+  "International News", "D", 'Derivative', 'unknown',
+  "Worldwise",          "D", 'Derivative', 'unknown',
+  "The Truth",          "D", 'Derivative', 'unknown',
+  "The Guide",          "D", 'Derivative', 'unknown',
+  "Kronos Star",        "D", 'Partially Primary', 'unknown',
+  "News Desk",          "E", 'Derivative', 'unknown',
+  "The Explainer",      "E", 'Derivative', 'unknown',
+  "Athena Speaks",      "E", 'Derivative', 'unknown',
+  "Central Bulletin",   "E", 'Derivative', 'gastech',
+  "The Abila Post",     "E", 'Primary', 'unknown',
+  "News Online Today",  "Others", 'Derivative', 'unknown',
+  "Modern Rubicon",     "Others", 'Primary', 'gastech',
+  "Centrum Sentinel",   "Others", 'Primary', 'gastech',
+  "Tethys News",        "Others",  'Derivative','gastech' 
 )
 
 news_article_groups %>% select(source, is_primary)
@@ -348,12 +348,20 @@ perc_of_org %>%
   coord_flip()
 ```
 
-We can see immediately that there are 8 news sources that do not or rarely mention pok, we can infer that 
+We can see immediately that there are 8 news sources that do not or rarely mention pok, we can infer that these articles write mainly about gastech. 
 
-However, for the other 
+* The World
+* The Tulip
+* The General Post
+* The Light of Truth
+* Who What News
+* Centrum Sentinel 
+* Modern Rubicon 
+* Tethys News 
 
-From our literature review, we understand that in particular "Homeland Illumination" 
+However, for the other news articles, they generally have an even distribution of mentions of pok, government and gastech. From our literature review, we understand that in particular "Homeland Illumination" has a strong inclination for POK.  
 
+Thus we ran a sentiment analysis to see what are the sentiments of each news article. 
 
 ```{r sentiment_analysis_pok}
 token_sentiments <- token_words %>% 
@@ -416,16 +424,71 @@ sentiment_by_grp %>%
     )
 ```
 
-In general, 
+We can observe that even though "Homeland Illumination" is pro-POK, the general tone of the article is still very negative whether or not the article contains the words POK or GASTech. This suggests that the tone of these articles slants towards POK by painting a negative situation. From this we can see that "The Truth" and "The Guide" are probably pro-GASTech as well.
+
+On a side note: The Abila Post overall contains many very negative news articles. 
 
 ### 3) Connections and Relationships 
 This section will answer part 3 of the challenge: Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. The complete step by step thought process and documentation can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/) 
 
+From some literature review and assumptions that those with the same surname are family, we can see the connections below. 
 
+```{r people_network_viz}
 
+# Nodes 
+people_nodes <- read_rds("data/people_nodes.rds") %>% 
+  rename(label = name)
+
+#Edges
+
+people_edges <- read_rds("data/people_edges.rds") %>%
+    mutate(smooth = TRUE) # Additional terms for the visualization
+
+visNetwork(people_nodes %>% filter(id %in% c(people_edges$from, people_edges$to)), people_edges) %>%
+  visIgraphLayout(layout = "layout_with_fr")%>%
+  visOptions(highlightNearest=TRUE, 
+             nodesIdSelection=TRUE)%>%
+  visLayout(randomSeed=123)
+```
+
+We observe that there are many 'family' members within GASTech. However, what is concerning are the relationships between POK memebers and GASTech members: 
+* 
+
+#### View connection via email headers 
+
+We can view the connection between employees within GASTech by selecting the relavent email headers. 
 
 <iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
 
 
+#### Highlights of Suspicious Emails sent by Suspicious People
 
+**Action: Virus detected on your system**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_action_virus_detected_on_your_system.JPG")
+```
 
+**Cute**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_cute.JPG")
+```
+
+**Files**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_files.JPG")
+```
+
+**FW: Arise inspiration for defenders of Kronos**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_fw_arise_inspiration_for_defenders_of_kronos.JPG")
+```
+
+**Plants**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_plants.JPG")
+```
+
+**Do you like the folowers**
+```{r, echo=FALSE}
+knitr::include_graphics("image/Email_do_you_like_the_flowers.JPG")
+```
