@@ -343,23 +343,24 @@ gastech_employee <- gastech_employee %>%
 
 write_rds(gastech_employee, "data/gastech_employees.rds") 
 
-gastech_employee
+gastech_employee %>%
+  arrange(LastName)
 ```
 
 ```
 ## # A tibble: 54 x 21
-##       id LastName       FirstName BirthDate           BirthCountry Gender
-##    <int> <chr>          <chr>     <dttm>              <chr>        <chr> 
-##  1     1 Campo-Corrente Ada       1951-11-26 00:00:00 Tethys       Female
-##  2     2 Morlun         Adan      1984-10-09 00:00:00 Kronos       Male  
-##  3     3 Nubarron       Adra      1968-06-06 00:00:00 Tethys       Female
-##  4     4 Hafon          Albina    1987-06-14 00:00:00 Kronos       Female
-##  5     5 Ribera         Anda      1975-11-17 00:00:00 Tethys       Female
-##  6     6 Calzas         Axel      1975-09-13 00:00:00 Tethys       Male  
-##  7     7 Hawelon        Benito    1978-11-23 00:00:00 Kronos       Male  
-##  8     8 Ovan           Bertrand  1964-12-12 00:00:00 Tethys       Male  
-##  9     9 Frente         Birgitta  1976-07-31 00:00:00 Tethys       Female
-## 10    10 Tempestad      Brand     1979-05-14 00:00:00 Tethys       Male  
+##       id LastName FirstName BirthDate           BirthCountry Gender
+##    <int> <chr>    <chr>     <dttm>              <chr>        <chr> 
+##  1    39 Alcazar  Lucas     1990-04-17 00:00:00 Tethys       Male  
+##  2    19 Arpa     Emile     1992-10-01 00:00:00 Kronos       Male  
+##  3    52 Awelon   Varro     1986-05-05 00:00:00 Kronos       Male  
+##  4    34 Azada    Lars      1973-04-30 00:00:00 Tethys       Male  
+##  5    20 Balas    Felix     1960-03-04 00:00:00 Tethys       Male  
+##  6    27 Barranco Ingrid    1961-10-26 00:00:00 Tethys       Female
+##  7    29 Baza     Isak      1979-02-12 00:00:00 Tethys       Male  
+##  8    37 Bergen   Linnea    1969-07-10 00:00:00 Tethys       Female
+##  9    38 Bodrogi  Loreto    1989-04-17 00:00:00 Kronos       Male  
+## 10    30 Borrasca Isande    1979-10-22 00:00:00 Tethys       Female
 ## # ... with 44 more rows, and 15 more variables: CitizenshipCountry <chr>,
 ## #   CitizenshipBasis <chr>, CitizenshipStartDate <dttm>, PassportCountry <chr>,
 ## #   PassportIssueDate <date>, PassportExpirationDate <dttm>,
@@ -422,7 +423,7 @@ We start off from the gastech employees, because we have the entire name list.
 
 
 ```r
-people_df <- gastech_employee %>%
+people_df <- gastech_employee  %>% 
   select(FirstName, LastName) %>% 
   mutate(organization = 'GASTech')
 
@@ -437,7 +438,7 @@ glimpse(people_df)
 ## $ organization <chr> "GASTech", "GASTech", "GASTech", "GASTech", "GASTech", "G~
 ```
 
-Next from the literature review, we are able to extract some names especially under the 
+Next from the literature review, we are able to extract some names and their organizations. 
 
 
 ```r
@@ -458,7 +459,6 @@ other_people <- tribble(
   'Lemual', 'Vann', 'Public', 
   'Neske', 'Vann', 'Public', 
   'Juliana', 'Vann', 'Public', 
-  
 )
 other_people
 ```
@@ -482,4 +482,76 @@ other_people
 ## 13 Lemual      Vann     Public               
 ## 14 Neske       Vann     Public               
 ## 15 Juliana     Vann     Public
+```
+
+We combine the data frames together below: 
+
+
+```r
+people_df <- people_df %>%
+  bind_rows(other_people) %>%
+  mutate(name = paste(FirstName, LastName, ' ')) %>% 
+  rowid_to_column('id') %>%
+  rename(group=organization)
+
+write_rds(people_df, "data/people_nodes.rds")
+
+people_df
+```
+
+```
+## # A tibble: 69 x 5
+##       id FirstName LastName       group   name                  
+##    <int> <chr>     <chr>          <chr>   <chr>                 
+##  1     1 Ada       Campo-Corrente GASTech "Ada Campo-Corrente  "
+##  2     2 Adan      Morlun         GASTech "Adan Morlun  "       
+##  3     3 Adra      Nubarron       GASTech "Adra Nubarron  "     
+##  4     4 Albina    Hafon          GASTech "Albina Hafon  "      
+##  5     5 Anda      Ribera         GASTech "Anda Ribera  "       
+##  6     6 Axel      Calzas         GASTech "Axel Calzas  "       
+##  7     7 Benito    Hawelon        GASTech "Benito Hawelon  "    
+##  8     8 Bertrand  Ovan           GASTech "Bertrand Ovan  "     
+##  9     9 Birgitta  Frente         GASTech "Birgitta Frente  "   
+## 10    10 Brand     Tempestad      GASTech "Brand Tempestad  "   
+## # ... with 59 more rows
+```
+
+
+
+
+```r
+family_df <- people_df %>% 
+  group_by(LastName) %>% 
+  filter(n()>1) %>%
+  arrange(LastName)
+
+family_df <- family_df %>%
+  select(name, LastName) %>%
+  left_join(family_df %>% select(name, LastName), by = "LastName") %>%
+  filter(name.x != name.y) %>%
+  rename(from_label = name.x, to_label = name.y) %>%
+  
+  mutate(label = "family")
+
+write_rds(family_df, "data/people_edges.rds")
+
+family_df
+```
+
+```
+## # A tibble: 46 x 4
+## # Groups:   LastName [9]
+##    from_label          LastName to_label            label 
+##    <chr>               <chr>    <chr>               <chr> 
+##  1 "Loreto Bodrogi  "  Bodrogi  "Henk Bodrogi  "    family
+##  2 "Henk Bodrogi  "    Bodrogi  "Loreto Bodrogi  "  family
+##  3 "Birgitta Frente  " Frente   "Vira Frente  "     family
+##  4 "Vira Frente  "     Frente   "Birgitta Frente  " family
+##  5 "Benito Hawelon  "  Hawelon  "Claudio Hawelon  " family
+##  6 "Claudio Hawelon  " Hawelon  "Benito Hawelon  "  family
+##  7 "Linda Lagos  "     Lagos    "Varja Lagos  "     family
+##  8 "Varja Lagos  "     Lagos    "Linda Lagos  "     family
+##  9 "Henk Mies  "       Mies     "Minke Mies  "      family
+## 10 "Minke Mies  "      Mies     "Henk Mies  "       family
+## # ... with 36 more rows
 ```
