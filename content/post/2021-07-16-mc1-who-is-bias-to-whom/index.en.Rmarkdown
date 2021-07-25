@@ -219,10 +219,11 @@ article_edges_agg %>%
   arrange(desc(weight))
 ```
 
+As of today, the graph do not work. For future work and considerations: 
 
 ```{r network}
-ggraph(article_graph) + 
-  geom_edge_link() +
-  geom_node_point()
+# ggraph(article_graph) + 
+#   geom_edge_link() +
+#   geom_node_point()
 
 ```

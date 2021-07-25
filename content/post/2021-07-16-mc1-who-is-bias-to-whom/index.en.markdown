@@ -282,12 +282,11 @@ article_edges_agg %>%
 ## # ... with 138 more rows
 ```
 
+As of today, the graph do not work. For future work and considerations: 
 
 
 ```r
-ggraph(article_graph) + 
-  geom_edge_link() +
-  geom_node_point()
+# ggraph(article_graph) + 
+#   geom_edge_link() +
+#   geom_node_point()
 ```
-
-<img src="{{< blogdown/postref >}}index.en_files/figure-html/network-1.png" width="672" />

@@ -65,7 +65,7 @@ cleaned_text_source <- read_rds("data/news_article_clean_primary_vs_derivative.r
 
 ## Analysis
 ### 1a) Primary Vs Derivative Sources 
-This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources?
+This section will answer part 1a of the challenge: Which are primary sources and which are derivative sources? The complete step by step thought process and documentation can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
 
 Primary Sources is "first-hand" information, while secondary sources provide analysis, commentary or criticism on the Primary source. In terms of data, we've defined primary source as the following: 
 - article text start with a time format 
@@ -211,10 +211,11 @@ news_article_groups %>% select(source, is_primary)
 ```
 
 ### 1b) Relationships:Primary vs Derivative Sources
-This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?
+This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources? The complete step by step thought process and documentation can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-explore-relationships-between-articles/)
 
+We started by tokenizing the article data that we have. With that, we are able to find out, based on the single words, which of the new articles are most similar using the `pairwise_cor` function. Below we have the network graph 
 
-
+**How similar are the news articles?** 
 ```{r cor_monogram}
 custom_stop_words <- tribble(
   ~word, ~lexicon,
@@ -247,7 +248,10 @@ articles_cors %>%
   theme_void()
 ```
 
+We notice that they news articles are naturally split into groups of 5, with a few exceptions. This is further supported by looking at articles with duplicated titles. Some of the articles posts before others. The lag in the date of post tells us which of the articles 'copies' others. The arrows point to the article source which reported the particular article first.
 
+
+**Which article is coping who?** 
 ```{r dup_articles}
 article_titles_dup <- cleaned_text_source %>%
   group_by(title) %>%
@@ -297,34 +301,131 @@ lag_edges_agg <- lag_edges %>%
   mutate(smooth = TRUE) %>%
   arrange(desc(value))
 
-visNetwork(lag_nodes, lag_edges_agg) %>%
+visNetwork(lag_nodes %>% filter(id %in% c(lag_edges_agg$from, lag_edges_agg$to)), lag_edges_agg) %>%
   visIgraphLayout(layout = "layout_with_fr")%>%
   visOptions(highlightNearest=TRUE,
              nodesIdSelection=TRUE)%>%
+  visLegend()%>%
   visLayout(randomSeed=123)
 ```
 
-
-ANALYSIS WRITE HERE 
+We can see that "News Online Today" actually grab most of their news from the 3 primary sources and even some of the partially primary source from weight of the arrow. What is interesting is that we find articles also posting after News Online Today though with a smaller degree. All of the primary sources have articles referring to them. What is interesting is that "Centrum Sentinel" and "Modern Rubicon" though are considered primary sources, do not have any duplicated titled articles with other news articles. 
 
 
 ### 2) Who is biased? 
-This section will answer part 2 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. 
-This section will be limited to 6 images and 500 words.
+This section will answer part 2 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. The complete step by step thought process and documentation can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
+
+**How many times do pok/governement/gastech appear?** 
+```{r freq_of_org_name}
+freq_of_org <- token_words %>%
+  filter(word %in% c("pok", "government", "gastech")) %>%
+  group_by(source) %>% 
+  summarize(total = n()) %>%
+  ungroup()
+
+perc_of_org <- token_words %>%
+  filter(word %in% c("pok", "government", "gastech")) %>%
+  group_by(source, word) %>% 
+  summarize(n = n()) %>%
+  ungroup() %>% 
+  left_join(freq_of_org) %>% 
+  mutate(perc = n/total, 
+         source=fct_reorder(source,perc))
+
+perc_of_org %>%
+  ggplot(aes(x=source, y = n, fill=word)) +
+  geom_bar(stat='identity') + 
+  coord_flip() +
+  facet_wrap(~word)
+```
 
 
+**What is the proportion of pok/governement/gastech in news articles?**
+```{r freq_of_org_name_perc}
+perc_of_org %>%
+  ggplot(aes(x=source, y = perc, fill=word)) +
+  geom_bar(stat='identity') + 
+  coord_flip()
+```
 
+We can see immediately that there are 8 news sources that do not or rarely mention pok, we can infer that 
+
+However, for the other 
+
+From our literature review, we understand that in particular "Homeland Illumination" 
+
+
+```{r sentiment_analysis_pok}
+token_sentiments <- token_words %>% 
+  left_join(get_sentiments("bing"))
+
+org_words <- token_words %>%
+  filter(word %in% c("pok"))
+
+org_count_words <- token_words %>% 
+  filter(article_id %in% unique(org_words$article_id)) %>% 
+  count(word, sort=TRUE) %>%
+  arrange(desc(n))
+
+sentiment_by_grp <- token_sentiments %>%
+  filter(sentiment %in% c("positive", "negative") & article_id %in% unique(org_words$article_id)) %>%
+  count(source, sentiment) %>%
+  spread(sentiment,n) %>% 
+  mutate(overall_sentiment = positive-negative, 
+         source = fct_reorder(source, overall_sentiment))
+
+sentiment_by_grp %>% 
+  ggplot(aes(x = source, y = overall_sentiment)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Overall Sentiment by Article with articles that contains POK",
+    subtitle = "Words in articles",
+    x = "Article",
+    y = "Overall Sentiment"
+    )
+```
+```{r sentiment_analysis_gastech}
+token_sentiments <- token_words %>% 
+  left_join(get_sentiments("bing"))
+
+org_words <- token_words %>%
+  filter(word %in% c("gastech"))
+
+org_count_words <- token_words %>% 
+  filter(article_id %in% unique(org_words$article_id)) %>% 
+  count(word, sort=TRUE) %>%
+  arrange(desc(n))
+
+sentiment_by_grp <- token_sentiments %>%
+  filter(sentiment %in% c("positive", "negative") & article_id %in% unique(org_words$article_id)) %>%
+  count(source, sentiment) %>%
+  spread(sentiment,n) %>% 
+  mutate(overall_sentiment = positive-negative, 
+         source = fct_reorder(source, overall_sentiment))
+
+sentiment_by_grp %>% 
+  ggplot(aes(x = source, y = overall_sentiment)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(
+    title = "Overall Sentiment by Article with articles that contains GASTECH",
+    subtitle = "Words in articles",
+    x = "Article",
+    y = "Overall Sentiment"
+    )
+```
+
+In general, 
 
 ### 3) Connections and Relationships 
-This section will answer part 3 of the challenge: Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. 
+This section will answer part 3 of the challenge: Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. The complete step by step thought process and documentation can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/) 
+
+
 
 
 <iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
 
 
 
-
-## Conclusion 
-
-TBC
 
