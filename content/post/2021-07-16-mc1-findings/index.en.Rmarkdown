@@ -38,8 +38,9 @@ Below and the table of content on the left is how we can navigate through the po
   * 2 Who is biased? [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-16-mc1-who-is-bias-to-whom/)
   * 3 Connections and Relationships [Full Post](https://yenngee-dataviz.netlify.app/post/2021-07-20-mc1-connections-revealed/)
 
-## Literature Review 
 
+## Literature Review 
+This is not the first time that Vast Challenge has given this data sources and topic. The first time that Vast Challenge set this scenario is in 2014. Though the questions were completely different, there were many valuable information and methodologies that we could learn from. The complete **Literature Review** can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-17-mc1-literature-review/)
 
 
 ## Data Preperation
@@ -166,9 +167,11 @@ source_type_per_article %>%
   coord_flip()
 ```
 
-ANALYSIS WRITE HERE 
+The three visualizations shows the breakdown of primary vs derivative sources and the type of primary source that we have managed to identify. 
 
-We can see that "Modern Rubicon" and "Centrum Sentinel" are fully 
+We can see that "Modern Rubicon" and "Centrum Sentinel" are fully blog posts, while "Homeland illumination" and "Abila Post", has a mix of blog posts and being the first to post. This is interesting to note as later on in part 1a) we can see that some of the news sources actually "copy" the information, almost like a loudhailer for the particular news article source. 
+
+For simplicity, we defined primary type as primary if >75% of the articles are considered primary, else if between 25%-75% then it is considered partially derivative and the rest are derivative. 
 
 ```{r news_article_groups}
 news_article_groups <- tribble(
@@ -209,6 +212,8 @@ news_article_groups %>% select(source, is_primary)
 
 ### 1b) Relationships:Primary vs Derivative Sources
 This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?
+
+
 
 ```{r cor_monogram}
 custom_stop_words <- tribble(
@@ -312,7 +317,11 @@ This section will be limited to 6 images and 500 words.
 
 ### 3) Connections and Relationships 
 This section will answer part 3 of the challenge: Given the data sources provided, use visual analytics to identify potential official and unofficial relationships among GASTech, POK, the APA, and Government. Include both personal relationships and shared goals and objectives. Provide evidence for these relationships. 
-This section will be limited to 6 images and 400 words.
+
+
+<iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
+
+
 
 
 ## Conclusion 

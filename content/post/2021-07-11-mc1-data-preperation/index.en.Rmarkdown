@@ -357,14 +357,21 @@ family_df <- people_df %>%
   group_by(LastName) %>% 
   filter(n()>1) %>%
   arrange(LastName)
+family_df
 
 family_df <- family_df %>%
   select(name, LastName) %>%
   left_join(family_df %>% select(name, LastName), by = "LastName") %>%
   filter(name.x != name.y) %>%
   rename(from_label = name.x, to_label = name.y) %>%
-  
-  mutate(label = "family")
+  left_join(people_df %>% select(name, id), by = c("from_label" = "name")) %>% 
+  rename(from = id) %>%
+  left_join(people_df %>% select(name, id), by = c("to_label" = "name")) %>% 
+  rename(to = id) %>%
+  mutate(label = "family") %>% 
+  mutate(sum = as.character(from + to)) %>% 
+  distinct(sum, .keep_all = TRUE)
+
 
 write_rds(family_df, "data/people_edges.rds")
 

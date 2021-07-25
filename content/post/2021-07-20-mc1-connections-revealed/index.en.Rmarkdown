@@ -80,20 +80,32 @@ g <- ggraph(gastech_graph, layout = 'nicely') +
 g + theme_graph()
 ```
 
-#### Shiny app
+#### View connections by Email Headers 
 <iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
 
-### Let's pick out the subjects 
-```{r email_headers}
-length(unique(gastech_emails$Subject))
+We make the following observations (some of them may be relevant to our assignment, some may not)
 
-gastech_emails %>%
-  group_by(Subject, Date) %>%
-  summarize(n())
+* There are some typical work related emails that the admin/IT sends to everyone such as 
+  * "Good morning, GasTech!" 
+  * "Daily morning announcements" 
+  * "Upcoming birthdays 
+* What's interesting is that the Facilities tend to send many emails to each other like "Don't text and drive!", "Traffic advisory for today", "Safety First!", "Be Careful!", however, there are some emails which they leave out certain people   * Left out Varro Awelon, Janittor: "Funny!!"
+  * Left out Betrand Ovan, Facilities Group Manager with "Route suggestion for next shift" 
+  * Left out Claudio Hawelon, Truck Driver, Union Meeting 
+  * Left out 4 people who are male, but the email header is "Guys night out - sorry, ladies" 
+* Each department have their own communications 
+  * Engineering: "Field work rotation schedule", "Wellhead flow rate data" 
+  * Security: "Inspection request for site" 
+  * Administration: "Training opportunity", "Catering?!?!" 
+  * Executive: "Impact of local politics on profit margin", "Yearly numbers looking good" 
+* Non-work related 
+  * sent within Administration dept: "Babysitting recommendations" , "Too funy - you have to see this...", "Does anyone have...", "Coupon club", "Craft night" 
+* Some suspicious 
+  
 
-```
+### Connection Amongst People 
 
-### Connection Amongst
+The data preparation for this can be found [here](https://yenngee-dataviz.netlify.app/post/2021-07-11-mc1-data-preperation/#people-relationships)
 
 ```{r load_people}
 # Nodes 
@@ -103,11 +115,18 @@ people_nodes
 
 #Edges
 
-people_edges <- read_rds("data/people_edges.rds") 
-people_edges
-
-
+people_edges <- read_rds("data/people_edges.rds") %>%
+    mutate(smooth = TRUE) # Additional terms for the visualization
+people_edges 
 
 ```
 
+We can see the network visualization here. 
 
+```{r people_network_viz}
+visNetwork(people_nodes %>% filter(id %in% c(people_edges$from, people_edges$to)), people_edges) %>%
+  visIgraphLayout(layout = "layout_with_fr")%>%
+  visOptions(highlightNearest=TRUE, 
+             nodesIdSelection=TRUE)%>%
+  visLayout(randomSeed=123)
+```
