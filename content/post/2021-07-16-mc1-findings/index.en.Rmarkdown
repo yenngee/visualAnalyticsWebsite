@@ -299,6 +299,10 @@ visNetwork(lag_nodes, lag_edges_agg) %>%
   visLayout(randomSeed=123)
 ```
 
+
+ANALYSIS WRITE HERE 
+
+
 ### 2) Who is biased? 
 This section will answer part 2 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. 
 This section will be limited to 6 images and 500 words.

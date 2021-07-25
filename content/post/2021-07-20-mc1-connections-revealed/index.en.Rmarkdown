@@ -10,7 +10,6 @@ tags: ['MITB', 'Text Analytics', "MC1"]
 output:
   blogdown::html_page: 
     toc: true
-runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -43,7 +42,6 @@ The data has been previously loaded, cleaned and transformed into a neat tibble 
 We load the cleaned data directly below: 
 
 ```{r load_data}
-
 # Nodes 
 gastech_employees <- read_rds("data/gastech_employees.rds") %>% 
   rename(department = CurrentEmploymentType, 
@@ -52,21 +50,21 @@ gastech_employees <- read_rds("data/gastech_employees.rds") %>%
   select(id, label, department, title, citizenship)
 gastech_employees 
 
-# Edges 
+# Edges
 gastech_emails <- read_rds("data/gastech_emails.rds")
 gastech_emails
 
-gastech_edges <- gastech_emails %>% 
-  group_by(source, target) %>% 
+gastech_edges <- gastech_emails %>%
+  group_by(source, target) %>%
   summarize(weight=n()) %>%
   filter(weight>1) %>%
-  ungroup() %>% 
+  ungroup() %>%
   mutate(from = source, to = target)
 
 gastech_edges
 
-gastech_graph <- tbl_graph(nodes = gastech_employees, 
-                           edges = gastech_edges, 
+gastech_graph <- tbl_graph(nodes = gastech_employees,
+                           edges = gastech_edges,
                            directed = TRUE)
 gastech_graph
 ```
@@ -83,70 +81,7 @@ g + theme_graph()
 ```
 
 #### Shiny app
-```{r shiny_app, echo = FALSE}
-# Nodes 
-gastech_employees <- read_rds("data/gastech_employees.rds") %>% 
-    mutate(title = paste(label, CurrentEmploymentTitle,' ')) %>%
-    rename(group = CurrentEmploymentType,
-           citizenship = CitizenshipCountry) %>% 
-    select(id, label, group, title, citizenship)
-
-# Edges 
-gastech_emails <- read_rds("data/gastech_emails.rds")
-
-gastech_emails_count <- gastech_emails %>% 
-    group_by(Subject) %>%
-    summarize(n = n()) %>%
-    arrange(desc(n)) %>% 
-    rowid_to_column("sort") 
-
-
-gastech_edges <- gastech_emails %>% 
-    group_by(source, target, Subject) %>% 
-    summarize(weight=n()) %>%
-    filter(weight>1) %>%
-    ungroup() %>% 
-    left_join(gastech_emails_count %>% select(Subject, sort)) %>%
-    mutate(from = source, to = target) %>% 
-    rowid_to_column("id") %>%
-    arrange(sort)
-
-# UI----
-ui <- fluidPage(
-    sidebarLayout(
-        sidebarPanel(
-            selectInput(
-                inputId='email_header_select', 
-                label = "Email Header", 
-                choices = gastech_edges$Subject, 
-                multiple=FALSE
-            )
-        ),
-        mainPanel(visNetworkOutput("email_network_select"))
-    )
-)
-
-# Define server logic required to draw a histogram
-server <- function(input, output, session) {
-    
-    output$email_network_select <- renderVisNetwork({
-        
-        selected_edges <- gastech_edges %>%
-            filter(Subject %in% input$email_header_select)
-        
-        visNetwork(gastech_employees, selected_edges, width = "100%", height = '100%') %>%
-            visIgraphLayout(layout = "layout_with_fr") %>%
-            visLegend() %>%
-            visEdges(smooth = FALSE, arrows = 'to') %>%
-            visLayout(randomSeed = 123)
-    })
-    
-    
-}
-
-# Run the application 
-shinyApp(ui = ui, server = server, options = list(height = 500))
-```
+<iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
 
 ### Let's pick out the subjects 
 ```{r email_headers}
@@ -157,4 +92,22 @@ gastech_emails %>%
   summarize(n())
 
 ```
+
+### Connection Amongst
+
+```{r load_people}
+# Nodes 
+people_nodes <- read_rds("data/people_nodes.rds") %>% 
+  rename(label = name)
+people_nodes
+
+#Edges
+
+people_edges <- read_rds("data/people_edges.rds") 
+people_edges
+
+
+
+```
+
 

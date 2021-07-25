@@ -1,0 +1,13 @@
+name: email_headers
+title: email_headers
+username:
+account: yenngee-dataviz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4420599
+bundleId: 4853923
+url: https://yenngee-dataviz.shinyapps.io/email_headers/
+when: 1627208976.01628
+lastSyncTime: 1627208976.01628
+asMultiple: FALSE
+asStatic: FALSE
