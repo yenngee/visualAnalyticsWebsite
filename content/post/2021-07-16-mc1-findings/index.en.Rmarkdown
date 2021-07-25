@@ -452,11 +452,18 @@ visNetwork(people_nodes %>% filter(id %in% c(people_edges$from, people_edges$to)
 ```
 
 We observe that there are many 'family' members within GASTech. However, what is concerning are the relationships between POK memebers and GASTech members: 
-* 
+
+* The Vann Family (Mandor Vann (POK), Isia Vann (GasTech), Edvard Vann (GasTech))
+* Henk Bodrogi (POK) & Loreto Bodrogi (GasTech)
+* Carmine Osvaldo (POK) & Hennie Osvaldo (GasTech)
+
+In particular the Vann family's connection flashes a red flag because Julianna Vann was a victim of Benzene Poisoning due to GasTech actions. 
+
+With the following suspicious connections in mind, we view the emails from GASTech and found certain email headers to be very suspicious. 
 
 #### View connection via email headers 
 
-We can view the connection between employees within GASTech by selecting the relavent email headers. 
+We can view the connection between employees within GASTech by selecting the relevant email headers. 
 
 <iframe src="https://yenngee-dataviz.shinyapps.io/email_headers/" width=700 height=500"></iframe>
 
@@ -468,27 +475,37 @@ We can view the connection between employees within GASTech by selecting the rel
 knitr::include_graphics("image/Email_action_virus_detected_on_your_system.JPG")
 ```
 
+Note: Emails of this header was sent out from Hennie Osvaldo and Inga Ferro who is not from the IT Department 
+
 **Cute**
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_cute.JPG")
 ```
+
+Note: 2 emails sent separately by 2 different pairs of people. 
 
 **Files**
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_files.JPG")
 ```
 
+Note: 4 correspondance sent separately by 4 different pairs of people. 
+
 **FW: Arise inspiration for defenders of Kronos**
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_fw_arise_inspiration_for_defenders_of_kronos.JPG")
 ```
+
+Note: the title has hints of POK and receipients include suspicious people 
 
 **Plants**
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_plants.JPG")
 ```
 
-**Do you like the folowers**
+Note: 3 correspondance sent separately by 3 different pairs of people. 
+
+**Do you like the flowers**
 ```{r, echo=FALSE}
 knitr::include_graphics("image/Email_do_you_like_the_flowers.JPG")
 ```
