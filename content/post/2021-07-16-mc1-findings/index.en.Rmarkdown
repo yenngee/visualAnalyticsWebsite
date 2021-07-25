@@ -48,8 +48,14 @@ The complete **Data Preparation process** can be found [here](https://yenngee-da
 ```{r load package}
 library(tidyverse)
 library(tidytext)
+library(tidygraph)
 library(stringr)
 library(gridExtra)
+library(lubridate)
+library(ggraph)
+library(igraph)
+library(widyr)
+library(visNetwork)
 ```
 
 ```{r load data}
@@ -164,10 +170,134 @@ ANALYSIS WRITE HERE
 
 We can see that "Modern Rubicon" and "Centrum Sentinel" are fully 
 
+```{r news_article_groups}
+news_article_groups <- tribble(
+  ~source, ~group, ~is_primary,
+  "The Light of Truth", "A", 'Derivative', 
+  "The General Post",   "A", 'Derivative', 
+  "Who What News",      "A", 'Derivative', 
+  "The Tulip",          "A", 'Derivative', 
+  "The World",          "A", 'Primary', 
+  "World Journal",      "B", 'Derivative', 
+  "Everyday News",      "B", 'Derivative', 
+  "The Continent",      "B", 'Derivative', 
+  "World Source",       "B", 'Partially Primary', 
+  "International Times","B", 'Partially Primary', 
+  "All News Today",     "C", 'Partially Primary', 
+  "The Wrap",           "C", 'Derivative', 
+  "Daily Pegasus",      "C", 'Derivative', 
+  "The Orb",            "C", 'Derivative', 
+  "Homeland Illumination", "C", 'Primary', 
+  "International News", "D", 'Derivative', 
+  "Worldwise",          "D", 'Derivative', 
+  "The Truth",          "D", 'Derivative', 
+  "The Guide",          "D", 'Derivative', 
+  "Kronos Star",        "D", 'Partially Primary',  
+  "News Desk",          "E", 'Derivative', 
+  "The Explainer",      "E", 'Derivative', 
+  "Athena Speaks",      "E", 'Derivative', 
+  "Central Bulletin",   "E", 'Derivative', 
+  "The Abila Post",     "E", 'Primary', 
+  "News Online Today",  "Others", 'Derivative', 
+  "Modern Rubicon",     "Others", 'Primary', 
+  "Centrum Sentinel",   "Others", 'Primary', 
+  "Tethys News",        "Others",  'Derivative'
+)
+
+news_article_groups %>% select(source, is_primary)
+```
+
 ### 1b) Relationships:Primary vs Derivative Sources
 This section will answer part 1b of the challenge: What are the relationships between the primary and derivative sources?
 
+```{r cor_monogram}
+custom_stop_words <- tribble(
+  ~word, ~lexicon,
+  "kronos", "CUSTOM",
+  "abila",  "CUSTOM"
+)
+stop_words2 <- stop_words %>%
+  bind_rows(custom_stop_words)
 
+token_words <- cleaned_text_source %>% 
+  unnest_tokens(word, text) %>%
+  filter(str_detect(word, "[a-z']$"), # only keep words. exclude all numeric. 
+         !word %in% stop_words2$word) # to remove stop words 
+
+words_by_articles <- token_words %>% 
+  count(source, word, sort=TRUE) %>% 
+  ungroup()
+
+articles_cors <- words_by_articles %>%
+  pairwise_cor(source, word,n,sort=TRUE) %>% 
+  distinct(correlation, .keep_all = TRUE)
+
+articles_cors %>%
+  filter(correlation > .65) %>% 
+  graph_from_data_frame() %>%
+  ggraph(layout='fr') + 
+  geom_edge_link(aes(alpha = correlation) , width = 1.5) + #alpha gives the shade
+  geom_node_point(size=6, color="lightblue") +
+  geom_node_text(aes(label=name), color="red", repel=TRUE) + 
+  theme_void()
+```
+
+
+```{r dup_articles}
+article_titles_dup <- cleaned_text_source %>%
+  group_by(title) %>%
+  add_count(source) %>% 
+  summarize(n_distinct_source = n_distinct(source), 
+            n_distinct_date = n_distinct(published_date), 
+            min_date = min(published_date),
+            n = n()) %>%
+  ungroup() %>%
+  filter(n>1 & n_distinct_source>1 & n_distinct_date > 1) %>%
+  arrange(desc(n))
+
+dup_articles <- cleaned_text_source %>%
+  filter(title %in% unique(article_titles_dup$title)) %>%
+  arrange(desc(title), desc(source)) %>%
+  left_join(article_titles_dup %>% select(title, min_date)) %>%
+  drop_na(published_date, min_date) %>%
+  mutate(days_lagged = published_date - min_date) %>%
+  mutate(days_lagged = ifelse(days_lagged >=2, '>=2 days', paste(days_lagged, 'day'))) 
+
+lag_nodes <- tibble(unique(cleaned_text_source$source), .name_repair = ~c("label")) %>%
+  rowid_to_column('id') %>%
+  left_join(news_article_groups, by = c("label" = "source")) %>%
+  rename(cluster = group, group = is_primary)
+
+no_lag <- dup_articles %>%
+  filter(days_lagged == "0 day") %>%
+  select(source, title)
+
+with_lag <- dup_articles %>%
+  filter(days_lagged != "0 day") %>%
+  select(source, title, days_lagged)
+
+lag_edges <- right_join(no_lag, with_lag, by= "title") %>%
+  rename(source_label = source.x,
+         target_label = source.y) %>%
+  left_join(lag_nodes %>% select(label, id), by = c("source_label" = "label")) %>%
+  rename(from = id) %>%
+  left_join(lag_nodes %>% select(label, id), by = c("target_label" = "label")) %>%
+  rename(to = id)
+
+lag_edges_agg <- lag_edges %>%
+  mutate(arrows = "from") %>%
+  group_by(from, to, source_label, target_label, arrows) %>%
+  summarize(value = n()) %>%
+  ungroup() %>%
+  mutate(smooth = TRUE) %>%
+  arrange(desc(value))
+
+visNetwork(lag_nodes, lag_edges_agg) %>%
+  visIgraphLayout(layout = "layout_with_fr")%>%
+  visOptions(highlightNearest=TRUE,
+             nodesIdSelection=TRUE)%>%
+  visLayout(randomSeed=123)
+```
 
 ### 2) Who is biased? 
 This section will answer part 2 of the challenge: Characterize any biases you identify in these news sources, with respect to their representation of specific people, places, and events. 

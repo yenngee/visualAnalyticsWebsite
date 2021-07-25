@@ -33,9 +33,12 @@ The final analysis done can be found [here](https://yenngee-dataviz.netlify.app/
 ```{r load package}
 library(tidyverse)
 library(tidytext)
+library(tidygraph)
+library(lubridate)
 library(ggraph)
 library(igraph)
 library(widyr)
+library(visNetwork)
 ```
 
 ### Load Data 
@@ -73,7 +76,7 @@ glimpse(token_words)
 
 ## Explore relationships 
 ### "Correlations" between articles
-we want to know which newsgroup is more similar based on the words they use. 
+we want to know which newsgroup is more similar based on the words they use. We can find the correlation between articles based on the words they use below:
 
 ```{r articles_cor}
 words_by_articles <- token_words %>% 
@@ -83,65 +86,166 @@ words_by_articles <- token_words %>%
 words_by_articles
 
 articles_cors <- words_by_articles %>%
-  pairwise_cor(source, word,n,sort=TRUE)
+  pairwise_cor(source, word,n,sort=TRUE) %>% 
+  distinct(correlation, .keep_all = TRUE)
 
 articles_cors
 ```
+From here each pair of source is assigned a correlation. Many pairs of the articles have quite a high 
+We see the value correlation in relation to its percentile of the position out of all the combinations possible. From here we can choose a break off point to filter the `article_cors` to show the network graph. The first break is where correlation is approximately 0.85. However this would give a graph that has limited connections. Another spot we can observe is where correlation is approximately 0.65, there is a small break. Churning out the network graph, we can see a reasonable visualization for our analysis. 
 
 ```{r cor_viz}
 articles_cors%>% 
   arrange(desc(correlation)) %>%
   rowid_to_column('sort') %>%
-  ggplot(aes(sort, correlation)) +
+  mutate(rank = percent_rank(correlation)) %>%
+  ggplot(aes(rank, correlation)) +
   geom_point()
 
+```
+
+We get the network graph below. We can see the various groups news articles. 
+
+There is one group (GROUP A) with: 
+
+* The Light of Truth 
+* The General Post
+* Who What News
+* The Tulip 
+* The World 
+
+One group (GROUP B) with 
+
+* World Journal 
+* Everday News
+* The Continent
+* World Source
+* International Times
+
+One group (GROUP C) with 
+
+* All News Today 
+* The Wrap 
+* Daily Pegasus
+* The Orb 
+* Homeland Illumination 
+
+One group (GROUP D) with 
+
+* International News
+* Worldwise
+* The Truth 
+* The Guide
+* Krono Stars 
+
+One group (Group E) with
+
+* News Desk 
+* The Explainer 
+* Athena Speaks
+* Central Bulletin 
+* The Abila Post
+
+
+Then we have News Online Today, that seemed to be reporting similar content across 4 groups. 
+
+Then we have some straddlers: 
+
+* Modern Rubicon (slightly similar with Centrum Sentinel)
+* Centrum Sentinel (slightly similar with Modern Rubicon)
+* Tethys News (slightly similar to Kronos Star)
+
+```{r news_article_groups}
+news_article_groups <- tribble(
+  ~source, ~group, ~is_primary,
+  "The Light of Truth", "A", 'Derivative', 
+  "The General Post",   "A", 'Derivative', 
+  "Who What News",      "A", 'Derivative', 
+  "The Tulip",          "A", 'Derivative', 
+  "The World",          "A", 'Primary', 
+  "World Journal",      "B", 'Derivative', 
+  "Everyday News",      "B", 'Derivative', 
+  "The Continent",      "B", 'Derivative', 
+  "World Source",       "B", 'Derivative', 
+  "International Times","B", 'Primary', 
+  "All News Today",     "C", 'Derivative', 
+  "The Wrap",           "C", 'Derivative', 
+  "Daily Pegasus",      "C", 'Derivative', 
+  "The Orb",            "C", 'Derivative', 
+  "Homeland Illumination", "C", 'Primary', 
+  "International News", "D", 'Derivative', 
+  "Worldwise",          "D", 'Derivative', 
+  "The Truth",          "D", 'Derivative', 
+  "The Guide",          "D", 'Derivative', 
+  "Kronos Star",        "D", 'Derivative', 
+  "News Desk",          "E", 'Derivative', 
+  "The Explainer",      "E", 'Derivative', 
+  "Athena Speaks",      "E", 'Derivative', 
+  "Central Bulletin",   "E", 'Derivative', 
+  "The Abila Post",     "E", 'Primary', 
+  "News Online Today",  "Others", 'Derivative', 
+  "Modern Rubicon",     "Others", 'Primary', 
+  "Centrum Sentinel",   "Others", 'Primary', 
+  "Tethys News",        "Others",  'Derivative'
+)
+
+news_article_groups
+```
+
+```{r cor_network_viz}
 articles_cors %>%
-  filter(correlation > .65) %>%
+  filter(correlation > .65) %>% 
   graph_from_data_frame() %>%
   ggraph(layout='fr') + 
   geom_edge_link(aes(alpha = correlation) , width = 1.5) + #alpha gives the shade
   geom_node_point(size=6, color="lightblue") +
   geom_node_text(aes(label=name), color="red", repel=TRUE) + 
   theme_void()
-  
+
 ```
 
-## ngrams
-We look at words as consecutive terms. 
+### bigram
+
+We repeat the same procedure but looking at look at words as 2 consecutive terms. 
 
 ```{r bigram_viz}
-bigrams <- cleaned_text %>%
-  unnest_tokens(bigram, text, token = "ngrams", n=2)
-
-bigrams_sep <- bigrams %>% 
+# To get the bigrams 
+bigrams_sep <- cleaned_text %>%
+  unnest_tokens(bigram, text, token = "ngrams", n=2) %>% 
   filter(bigram != 'NA') %>%
   separate(bigram, c("word1", "word2"), sep=" ")
+bigrams_sep
 
+# filter out items with stopwords 
 bigrams_filtered <- bigrams_sep %>%
   filter(!word1 %in% stop_words$word) %>%
   filter(!word2%in% stop_words$word)%>%
   mutate(word = paste(word1, word2, sep=" "))
+bigrams_filtered
 
+# Next we count the words
 bigram_counts <- bigrams_filtered  %>%
   count(word, sort=TRUE) %>%
-  filter(n>3)
+  filter(n>1)
 bigram_counts
 
+# we count the words by articles 
 bigrams_by_articles <- bigrams_filtered %>% 
   count(source, word, sort=TRUE) %>% 
   ungroup()
-
 bigrams_by_articles
 
+# Obtain the  correlation between articles based on the bigrams
 articles_cors <- bigrams_by_articles %>%
-  pairwise_cor(source, word,n,sort=TRUE)
+  pairwise_cor(source, word,n,sort=TRUE) %>% 
+  distinct(correlation, .keep_all = TRUE)
 
-articles_cors
-
+# 
 articles_cors%>% 
   arrange(desc(correlation)) %>%
   rowid_to_column('sort') %>%
-  ggplot(aes(sort, correlation)) +
+  mutate(rank = percent_rank(correlation)) %>%
+  ggplot(aes(rank, correlation)) +
   geom_point()
 
 articles_cors %>%
@@ -152,4 +256,80 @@ articles_cors %>%
   geom_node_point(size=6, color="lightblue") +
   geom_node_text(aes(label=name), color="red", repel=TRUE) + 
   theme_void()
+```
+
+### Duplicated articles
+
+From the [previous part](https://yenngee-dataviz.netlify.app/post/2021-07-15-mc1-primary-vs-derivative-sources/)
+
+```{r dup articles}
+article_titles_dup <- cleaned_text %>%
+  group_by(title) %>%
+  add_count(source) %>% 
+  summarize(n_distinct_source = n_distinct(source), 
+            n_distinct_date = n_distinct(published_date), 
+            min_date = min(published_date),
+            n = n()) %>%
+  ungroup() %>%
+  filter(n>1 & n_distinct_source>1 & n_distinct_date > 1) %>%
+  arrange(desc(n))
+
+dup_articles <- cleaned_text %>%
+  filter(title %in% unique(article_titles_dup$title)) %>%
+  arrange(desc(title), desc(source)) %>%
+  left_join(article_titles_dup %>% select(title, min_date)) %>%
+  drop_na(published_date, min_date) %>%
+  mutate(days_lagged = published_date - min_date) %>%
+  mutate(days_lagged = ifelse(days_lagged >=2, '>=2 days', paste(days_lagged, 'day'))) 
+
+dup_articles 
+```
+
+```{r viz_duplicated}
+lag_nodes <- tibble(unique(cleaned_text$source), .name_repair = ~c("label")) %>%
+  rowid_to_column('id')
+
+lag_nodes
+
+no_lag <- dup_articles %>% 
+  filter(days_lagged == "0 day") %>%
+  select(source, title)
+
+with_lag <- dup_articles %>% 
+  filter(days_lagged != "0 day") %>%
+  select(source, title, days_lagged)
+
+lag_edges <- right_join(no_lag, with_lag, by= "title") %>%
+  rename(source_label = source.x,
+         target_label = source.y) %>%
+  left_join(lag_nodes %>% select(label, id), by = c("source_label" = "label")) %>% 
+  rename(from = id) %>%
+  left_join(lag_nodes %>% select(label, id), by = c("target_label" = "label")) %>% 
+  rename(to = id) 
+
+
+# lag_graph <- tbl_graph(nodes = lag_nodes, 
+#                           edges = lag_edges_agg, 
+#                           directed = TRUE)
+```
+
+
+
+```{r viz_lag}
+
+lag_edges_agg <- lag_edges %>% 
+  mutate(arrows = "from") %>%
+  group_by(from, to, source_label, target_label, arrows) %>%
+  summarize(value = n()) %>%
+  ungroup() %>% 
+  mutate(smooth = TRUE) %>%
+  arrange(desc(value))
+
+lag_edges_agg
+
+visNetwork(lag_nodes, lag_edges_agg) %>%
+  visIgraphLayout(layout = "layout_with_fr")%>%
+  visOptions(highlightNearest=TRUE, 
+             nodesIdSelection=TRUE)%>%
+  visLayout(randomSeed=123)
 ```
